@@ -1,0 +1,50 @@
+-- CMS tables for personal site content/config
+-- MySQL 8+
+
+CREATE TABLE IF NOT EXISTS `cms_site_setting` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `settings_json` JSON NOT NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `cms_page` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `path` VARCHAR(255) NOT NULL,
+  `title` VARCHAR(255) NULL,
+  `seo_title` VARCHAR(255) NULL,
+  `seo_description` VARCHAR(1024) NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'DRAFT', -- DRAFT / PUBLISHED
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cms_page_path` (`path`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `cms_page_block` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `page_id` BIGINT NOT NULL,
+  `type` VARCHAR(64) NOT NULL, -- HERO / MARKDOWN / POST_LIST / PROJECT_LIST ...
+  `sort` INT NOT NULL DEFAULT 0,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'DRAFT', -- DRAFT / PUBLISHED
+  `props_json` JSON NOT NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cms_page_block_page_id_status_sort` (`page_id`, `status`, `sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `cms_post` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `type` VARCHAR(32) NOT NULL DEFAULT 'BLOG', -- BLOG / PROJECT
+  `slug` VARCHAR(255) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `summary` VARCHAR(1024) NULL,
+  `cover_url` VARCHAR(1024) NULL,
+  `content_md` MEDIUMTEXT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'DRAFT', -- DRAFT / PUBLISHED
+  `published_at` DATETIME NULL,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cms_post_slug` (`slug`),
+  KEY `idx_cms_post_type_status_published_at` (`type`, `status`, `published_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

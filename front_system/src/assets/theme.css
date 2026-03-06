@@ -1,0 +1,668 @@
+/* 全局极简高端主题（自定义风格） */
+
+:root {
+  --sky-bg: #f5f5f7;
+  --sky-bg-alt: #f9fafb;
+  --sky-card: #ffffff;
+  --sky-border-subtle: rgba(15, 23, 42, 0.04);
+  --sky-border-strong: rgba(15, 23, 42, 0.08);
+  --sky-radius-xl: 26px;
+  --sky-radius-lg: 20px;
+  --sky-radius-md: 14px;
+  --sky-shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.10);
+  --sky-shadow-subtle: 0 10px 26px rgba(15, 23, 42, 0.06);
+  --sky-text-main: #111827;
+  --sky-text-soft: #6b7280;
+  --sky-primary: #60a5fa; /* 柔和浅蓝主色 */
+  --sky-primary-strong: #3b82f6; /* 稍深一点用于悬停 */
+  --sky-primary-soft: rgba(96, 165, 250, 0.12);
+  --sky-accent-yellow: #facc15;
+  /* 全局字体 - 使用霞鹜文楷（LXGW WenKai） */
+  --sky-font-family: "LXGW WenKai", sans-serif;
+  /* 全局基础字体大小 */
+  --sky-font-size-base: 16px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+html {
+  font-size: var(--sky-font-size-base);
+}
+
+html,
+body {
+  font-family: var(--sky-font-family);
+  font-size: var(--sky-font-size-base);
+  background-color: var(--sky-bg);
+  color: var(--sky-text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-weight: 400;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  letter-spacing: 0.015em;
+  line-height: 1.6;
+}
+
+/* 确保项目中实际使用的 Ant Design 组件也使用柔顺字体和字体大小 */
+:where(.ant-btn),
+:where(.ant-input),
+:where(.ant-input-password),
+:where(.ant-select),
+:where(.ant-select-selector),
+:where(.ant-select-option),
+:where(.ant-table),
+:where(.ant-table-thead),
+:where(.ant-table-tbody),
+:where(.ant-table-pagination),
+:where(.ant-menu),
+:where(.ant-menu-item),
+:where(.ant-menu-submenu),
+:where(.ant-menu-submenu-title),
+:where(.ant-card),
+:where(.ant-card-head),
+:where(.ant-card-body),
+:where(.ant-form),
+:where(.ant-form-item),
+:where(.ant-form-item-label),
+:where(.ant-tag),
+:where(.ant-modal),
+:where(.ant-modal-header),
+:where(.ant-modal-body),
+:where(.ant-modal-footer),
+:where(.ant-checkbox),
+:where(.ant-checkbox-wrapper),
+:where(.ant-radio),
+:where(.ant-radio-group),
+:where(.ant-space),
+:where(.ant-layout),
+:where(.ant-layout-header),
+:where(.ant-layout-sider),
+:where(.ant-layout-content),
+:where(.ant-flex),
+:where(.ant-dropdown),
+:where(.ant-dropdown-menu),
+:where(.ant-dropdown-menu-item),
+:where(.ant-avatar),
+:where(.ant-tree-select),
+:where(.ant-tree-select-selector) {
+  font-family: var(--sky-font-family) !important;
+  font-size: var(--sky-font-size-base) !important;
+}
+
+#app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 根视图 */
+.app-view-root {
+  flex: 1;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 布局壳（Home.vue） */
+.layout-root {
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--sky-border-subtle);
+}
+
+.header :deep(.ant-avatar) {
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.main-layout {
+  display: flex;
+  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
+  background: transparent;
+}
+
+.sider {
+  background: transparent !important;
+  padding: 24px 16px 24px 24px;
+}
+
+.sider-inner {
+  height: 100%;
+  border-radius: var(--sky-radius-xl);
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.content-wrapper {
+  padding: 24px 24px 32px 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  height: 100%;
+  border-radius: var(--sky-radius-xl);
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  padding: 24px 24px 32px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 通用页面结构 */
+.page-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-section {
+  border-radius: var(--sky-radius-lg);
+  background: var(--sky-card);
+  border: 1px solid var(--sky-border-subtle);
+  box-shadow: 0 10px 22px rgba(148, 163, 184, 0.08);
+}
+
+.page-section--padded {
+  padding: 16px 20px;
+}
+
+.page-section--table {
+  padding: 0;
+  overflow: hidden;
+}
+
+.page-section--table :deep(.ant-table-wrapper) {
+  border-radius: 0 0 var(--sky-radius-lg) var(--sky-radius-lg);
+}
+
+/* 查询区域 */
+.search-card {
+  border-radius: var(--sky-radius-lg);
+  background: var(--sky-bg-alt);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  padding: 16px 20px 8px;
+}
+
+.search-card :deep(.ant-form-item) {
+  margin-bottom: 8px;
+}
+
+/* 表格区域 */
+.table-card {
+  border-radius: var(--sky-radius-lg);
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  padding: 12px 16px 16px;
+}
+
+.table-card :deep(.ant-table-wrapper) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 表格内容区域滚动，分页固定在表格底部 */
+.table-card :deep(.ant-table-body) {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.table-card :deep(.ant-table-pagination) {
+  margin-top: 8px;
+}
+
+.table-card :deep(.ant-table) {
+  background: transparent;
+}
+
+.table-card :deep(.ant-table-thead > tr > th) {
+  background: #eef2ff;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  font-weight: 600;
+  color: #111827;
+}
+
+.table-card :deep(.ant-table-tbody > tr:nth-child(odd) > td) {
+  background: #f9fafb;
+}
+
+.table-card :deep(.ant-table-tbody > tr:nth-child(even) > td) {
+  background: #ffffff;
+}
+
+.table-card :deep(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.table-card :deep(.ant-table-tbody > tr:hover > td) {
+  background: #f0f9ff !important;
+}
+
+.table-card :deep(.ant-pagination) {
+  margin-top: 12px;
+}
+
+/* 全局动画增强 */
+/* 页面容器淡入动画 */
+.page-container {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 卡片悬停效果 */
+.page-section {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-section:hover {
+  box-shadow: 0 14px 32px rgba(148, 163, 184, 0.12);
+  transform: translateY(-2px);
+}
+
+/* 表格行动画 */
+.table-card :deep(.ant-table-tbody > tr) {
+  transition: all 0.2s ease;
+}
+
+.table-card :deep(.ant-table-tbody > tr:hover) {
+  transform: scale(1.01);
+}
+
+/* 输入框通用动画 */
+:root :where(.ant-input),
+:root :where(.ant-input-password),
+:root :where(.ant-select-selector) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root :where(.ant-input:hover),
+:root :where(.ant-input-password:hover),
+:root :where(.ant-select:hover .ant-select-selector) {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.1);
+}
+
+:root :where(.ant-input:focus),
+:root :where(.ant-input-password:focus),
+:root :where(.ant-select-focused .ant-select-selector) {
+  border-color: var(--sky-primary);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1), 0 4px 12px rgba(96, 165, 250, 0.15);
+  transform: scale(1.01);
+}
+
+/* 菜单项动画 */
+.custom-menu :deep(.ant-menu-item),
+.custom-menu :deep(.ant-menu-submenu-title) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-menu :deep(.ant-menu-item:hover),
+.custom-menu :deep(.ant-menu-submenu-title:hover) {
+  transform: translateX(4px);
+}
+
+/* 标签动画 */
+.table-card :deep(.ant-tag) {
+  transition: all 0.2s ease;
+}
+
+.table-card :deep(.ant-tag:hover) {
+  transform: scale(1.05);
+}
+
+
+/* 固定列不受压缩 */
+.content :deep(.ant-table-cell-fix-right) {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: #fff;
+}
+
+.content :deep(.ant-table-thead > tr > th),
+.content :deep(.ant-table-tbody > tr > td) {
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+/* 登录页卡通风格 */
+.login-page {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background:
+    radial-gradient(circle at top left, #ffffff 0, #e5edff 40%, var(--sky-bg) 80%),
+    linear-gradient(145deg, #f9fafb 0, var(--sky-bg) 60%, #e5e7eb 100%);
+  background-size: 200% 200%;
+  position: relative;
+  overflow: hidden;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 简单的卡通云朵效果 */
+.login-page::before,
+.login-page::after {
+  content: "";
+  position: absolute;
+  background: #ffffff;
+  border-radius: 999px;
+  opacity: 0.7;
+  filter: blur(32px);
+}
+
+.login-page::before {
+  width: 260px;
+  height: 140px;
+  top: -40px;
+  left: -60px;
+}
+
+.login-page::after {
+  width: 320px;
+  height: 180px;
+  bottom: -60px;
+  right: -40px;
+}
+
+.login-shell {
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.login-card {
+  border-radius: 28px;
+  background: linear-gradient(145deg, #f9fafb, #eef2ff);
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  animation: cardBreath 4s ease-in-out infinite;
+}
+
+@keyframes cardBreath {
+  0%, 100% {
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  }
+  50% {
+    box-shadow: 0 20px 44px rgba(15, 23, 42, 0.12);
+  }
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.login-card:hover::before {
+  left: 100%;
+}
+
+.login-card:hover {
+  transform: translateY(-2px);
+}
+
+.login-card :deep(.ant-card-head) {
+  border-bottom: none;
+  padding: 24px 28px 0;
+}
+
+.login-card :deep(.ant-card-head-title) {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #1e293b;
+}
+
+.login-card :deep(.ant-card-body) {
+  padding: 8px 28px 28px;
+}
+
+.login-error {
+  color: #dc2626;
+  margin-bottom: 12px;
+  font-size: 13px;
+  padding: 10px 14px;
+  background: rgba(220, 38, 38, 0.08);
+  border-radius: 8px;
+  border-left: 3px solid #dc2626;
+  animation: errorPulse 2s ease-in-out infinite;
+}
+
+@keyframes errorPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.login-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.login-primary-btn {
+  width: 100%;
+  border-radius: 999px;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-primary-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+/* 表单必填星号隐藏 */
+:root :where(.ant-form-item-required)::before {
+  display: none !important;
+  content: "" !important;
+}
+
+/* 左侧菜单（更卡通圆润） */
+.custom-menu {
+  border-right: none !important;
+  background: transparent !important;
+}
+
+.custom-menu :deep(.ant-menu-item),
+.custom-menu :deep(.ant-menu-submenu-title) {
+  border-radius: 999px;
+  margin-inline: 10px;
+  margin-block: 4px;
+  padding-inline-start: 18px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-menu :deep(.ant-menu-item::before),
+.custom-menu :deep(.ant-menu-submenu-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 4px;
+  height: 0;
+  background: linear-gradient(180deg, var(--sky-primary), var(--sky-primary-strong));
+  border-radius: 0 4px 4px 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.custom-menu :deep(.ant-menu-item-selected::before),
+.custom-menu :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title::before) {
+  transform: translateY(-50%) scaleY(1);
+  height: 60%;
+}
+
+.custom-menu :deep(.ant-menu-item-selected),
+.custom-menu :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title) {
+  background-color: var(--sky-primary-soft) !important;
+  color: var(--sky-primary-strong) !important;
+  transform: translateX(4px);
+}
+
+.custom-menu :deep(.ant-menu-item-selected .ant-menu-title-content),
+.custom-menu :deep(.ant-menu-submenu-selected .ant-menu-title-content) {
+  font-weight: 600;
+}
+
+.custom-menu :deep(.ant-menu-item:hover),
+.custom-menu :deep(.ant-menu-submenu-title:hover) {
+  background-color: rgba(224, 242, 254, 0.6) !important;
+  transform: translateX(4px);
+}
+
+/* 选中状态的菜单项悬停时保持原有背景，只加深一点 */
+.custom-menu :deep(.ant-menu-item-selected:hover),
+.custom-menu :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title:hover) {
+  background-color: var(--sky-primary-soft) !important;
+  opacity: 1;
+}
+
+.custom-menu :deep(.ant-menu-item:active),
+.custom-menu :deep(.ant-menu-submenu-title:active) {
+  transform: translateX(4px) scale(0.98);
+}
+
+.custom-menu :deep(.ant-menu-item-icon),
+.custom-menu :deep(.ant-menu-submenu-title .ant-menu-item-icon) {
+  font-size: 18px !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-menu :deep(.ant-menu-item:hover .ant-menu-item-icon),
+.custom-menu :deep(.ant-menu-submenu-title:hover .ant-menu-item-icon) {
+  transform: scale(1.1);
+}
+
+.custom-menu :deep(.ant-menu-item-selected .ant-menu-item-icon),
+.custom-menu :deep(.ant-menu-submenu-selected .ant-menu-item-icon) {
+  transform: scale(1.1);
+}
+
+/* 主按钮卡通化 */
+:root :where(.ant-btn-primary) {
+  background: linear-gradient(135deg, var(--sky-primary), var(--sky-primary-strong));
+  border-color: var(--sky-primary-strong);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #fff !important;
+}
+
+:root :where(.ant-btn-primary:not(:disabled)) {
+  color: #fff !important;
+}
+
+:root :where(.ant-btn-primary:not(:disabled) span),
+:root :where(.ant-btn-primary:not(:disabled) .anticon) {
+  color: #fff !important;
+}
+
+:root :where(.ant-btn-primary:hover),
+:root :where(.ant-btn-primary:focus) {
+  background: linear-gradient(135deg, var(--sky-primary-strong), #2563eb);
+  border-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+}
+
+:root :where(.ant-btn-primary:active) {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+
+/* 软标签 */
+.table-card :deep(.ant-tag-green),
+.table-card :deep(.ant-tag-red) {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 500;
+}

@@ -1,0 +1,25 @@
+server:
+  port: 11006
+  servlet:
+    context-path: /site
+spring:
+  application:
+    name: site
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${nacos_ip}:${nacos_port}
+        username: ${nacos_username}
+        password: ${nacos_password}
+        namespace: ${spring.profiles.active}
+      config:
+        server-addr: ${nacos_ip}:${nacos_port}
+        username: ${nacos_username}
+        password: ${nacos_password}
+        namespace: ${spring.profiles.active}
+        file-extension: yaml
+  config:
+    import:
+      - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}

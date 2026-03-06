@@ -1,0 +1,14 @@
+services:
+  site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: site
+    environment:
+      # 时区设置
+      - TZ=Asia/Shanghai
+      # Spring Profile
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+
+
