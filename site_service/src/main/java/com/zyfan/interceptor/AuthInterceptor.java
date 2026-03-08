@@ -74,7 +74,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
         UserInfo userInfo = JSON.parseObject(userInfoStr, UserInfo.class);
-        if (userInfo.getUserType() || userInfo.getAppType()) {
+        if (!userInfo.getAllowExternalUser()&&(userInfo.getUserType() || userInfo.getAppType())) {
             throw new ZException(CodeStatusEnum.UNAUTHORIZED, "无访问权限");
         }
         // 校验接口权限
