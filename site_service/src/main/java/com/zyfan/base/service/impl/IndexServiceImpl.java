@@ -241,7 +241,7 @@ public class IndexServiceImpl implements IndexService {
             responseVo = authClient.userToken(requestVo.getData(),clientId,clientSecret, realIp,flushAccessTokenTask.getAccessToken());
         }
         if (responseVo.getCode() != CodeStatusEnum.SUCCESS.getCode()) {
-            throw new ZException(CodeStatusEnum.UNAUTHORIZED,"登录失败");
+            throw new ZException(CodeStatusEnum.UNAUTHORIZED,responseVo.getMessage());
         }
         cacheUserInfo(responseVo.getData().getUserToken());
         return responseVo.getData();

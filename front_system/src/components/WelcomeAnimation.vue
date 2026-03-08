@@ -1,33 +1,46 @@
 <template>
   <transition name="welcome-fade">
     <div v-if="show" class="welcome-container">
+      <!-- 水墨晕染背景 -->
+      <div class="ink-bg">
+        <div class="ink-blob ink-blob-1"></div>
+        <div class="ink-blob ink-blob-2"></div>
+        <div class="ink-blob ink-blob-3"></div>
+      </div>
+
+      <!-- 浮动墨点 -->
+      <div class="ink-particles">
+        <div
+          v-for="i in 12"
+          :key="i"
+          class="ink-dot"
+          :style="getInkDotStyle(i)"
+        ></div>
+      </div>
+
       <div class="welcome-content">
-        <!-- 欢迎文字 -->
+        <!-- 逐字显现的欢迎文字 -->
         <div class="welcome-text">
-          <h1 class="welcome-title" :class="{ 'animate-in': animateTitle }">
-            welcome
+          <h1 class="welcome-title">
+            <span
+              v-for="(char, idx) in 'welcome'"
+              :key="idx"
+              class="char"
+              :class="{ 'char-visible': animateTitle && charVisible[idx] }"
+              :style="{ animationDelay: `${idx * 0.08}s` }"
+            >{{ char }}</span>
           </h1>
+          <p class="welcome-subtitle" :class="{ 'animate-in': animateSubtitle }">
+            正在为您准备
+          </p>
         </div>
-        
-        <!-- 装饰性动画元素 -->
-        <div class="welcome-decoration">
-          <div class="decoration-circle circle-1"></div>
-          <div class="decoration-circle circle-2"></div>
-          <div class="decoration-circle circle-3"></div>
-          <div class="decoration-circle circle-4"></div>
-          <div class="decoration-circle circle-5"></div>
-        </div>
-        
-        <!-- 粒子效果背景 -->
-        <div class="particles">
-          <div class="particle" v-for="i in 20" :key="i" :style="getParticleStyle(i)"></div>
-        </div>
-        
-        <!-- 加载指示器 -->
+
+        <!-- 毛笔笔触风格加载条 -->
         <div class="welcome-loader" :class="{ 'animate-in': animateLoader }">
-          <div class="loader-dot"></div>
-          <div class="loader-dot"></div>
-          <div class="loader-dot"></div>
+          <div class="brush-track">
+            <div class="brush-fill"></div>
+          </div>
+          <div class="loader-hint">加载中</div>
         </div>
       </div>
     </div>
@@ -35,21 +48,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  },
-  duration: {
-    type: Number,
-    default: 2000 // 默认2秒（最小显示时间）
-  },
-  ready: {
-    type: Boolean,
-    default: false // 资源是否已准备好
-  }
+  show: { type: Boolean, default: false },
+  duration: { type: Number, default: 2000 },
+  ready: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['complete']);
@@ -61,11 +65,25 @@ const startTime = ref(0);
 const readyTime = ref(0);
 let completeTimer = null;
 
-// 生成粒子样式
-const getParticleStyle = (index) => {
-  const delay = (index * 0.1) % 2;
-  const left = (index * 7.5) % 100;
-  const size = 4 + (index % 3) * 2;
+// 逐字显示：根据 animateTitle 延迟计算每个字是否可见
+const charVisible = ref([false, false, false, false, false, false, false]);
+watch(animateTitle, (val) => {
+  if (val) {
+    charVisible.value = [false, false, false, false, false, false, false];
+    'welcome'.split('').forEach((_, i) => {
+      setTimeout(() => {
+        charVisible.value = [...charVisible.value.slice(0, i), true, ...charVisible.value.slice(i + 1)];
+      }, i * 120);
+    });
+  } else {
+    charVisible.value = [false, false, false, false, false, false, false];
+  }
+});
+
+const getInkDotStyle = (index) => {
+  const left = (index * 8.5) % 95 + 2;
+  const delay = (index * 0.15) % 2.5;
+  const size = 3 + (index % 2) * 2;
   return {
     left: `${left}%`,
     animationDelay: `${delay}s`,
@@ -74,7 +92,6 @@ const getParticleStyle = (index) => {
   };
 };
 
-// 触发完成事件
 const triggerComplete = () => {
   if (completeTimer) {
     clearTimeout(completeTimer);
@@ -87,32 +104,16 @@ watch(() => props.show, (newVal) => {
   if (newVal) {
     startTime.value = Date.now();
     readyTime.value = 0;
-    
-    // 依次触发动画
-    setTimeout(() => {
-      animateTitle.value = true;
-    }, 100);
-    
-    setTimeout(() => {
-      animateSubtitle.value = true;
-    }, 300);
-    
-    setTimeout(() => {
-      animateLoader.value = true;
-    }, 500);
-    
-    // 如果已经准备好，等待最小显示时间后完成
+    setTimeout(() => { animateTitle.value = true; }, 80);
+    setTimeout(() => { animateSubtitle.value = true; }, 400);
+    setTimeout(() => { animateLoader.value = true; }, 600);
     if (props.ready) {
       readyTime.value = Date.now();
       const elapsed = readyTime.value - startTime.value;
       const remaining = Math.max(0, props.duration - elapsed);
       completeTimer = setTimeout(triggerComplete, remaining);
-    } else {
-      // 如果还没准备好，等待准备好后再处理
-      completeTimer = setTimeout(triggerComplete, props.duration);
     }
   } else {
-    // 重置动画状态
     animateTitle.value = false;
     animateSubtitle.value = false;
     animateLoader.value = false;
@@ -123,19 +124,12 @@ watch(() => props.show, (newVal) => {
   }
 });
 
-// 监听 ready 状态变化
 watch(() => props.ready, (newVal) => {
   if (newVal && props.show && !readyTime.value) {
     readyTime.value = Date.now();
     const elapsed = readyTime.value - startTime.value;
     const remaining = Math.max(0, props.duration - elapsed);
-    
-    // 清除之前的定时器
-    if (completeTimer) {
-      clearTimeout(completeTimer);
-    }
-    
-    // 等待剩余的最小显示时间后完成
+    if (completeTimer) clearTimeout(completeTimer);
     completeTimer = setTimeout(triggerComplete, remaining);
   }
 });
@@ -144,10 +138,7 @@ watch(() => props.ready, (newVal) => {
 <style scoped>
 .welcome-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background-image: linear-gradient(to top, #fad0c4 0%, #ffd1ff 100%);
   display: flex;
   align-items: center;
@@ -156,43 +147,121 @@ watch(() => props.ready, (newVal) => {
   overflow: hidden;
 }
 
+.ink-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ink-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: inkFloat 8s ease-in-out infinite;
+}
+
+.ink-blob-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(251, 113, 133, 0.45) 0%, transparent 70%);
+  top: -10%;
+  left: -5%;
+  animation-delay: 0s;
+}
+
+.ink-blob-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.4) 0%, transparent 70%);
+  bottom: -15%;
+  right: -5%;
+  animation-delay: -3s;
+}
+
+.ink-blob-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(253, 186, 116, 0.45) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -5s;
+}
+
+@keyframes inkFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -30px) scale(1.05); }
+  66% { transform: translate(-15px, 20px) scale(0.95); }
+}
+
+.ink-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ink-dot {
+  position: absolute;
+  background: rgba(236, 72, 153, 0.45);
+  border-radius: 50%;
+  top: -10px;
+  animation: inkRise 4s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.3);
+}
+
+@keyframes inkRise {
+  0% { transform: translateY(0) scale(0); opacity: 0; }
+  15% { opacity: 0.8; }
+  85% { opacity: 0.8; }
+  100% { transform: translateY(110vh) scale(1); opacity: 0; }
+}
+
 .welcome-content {
   position: relative;
   text-align: center;
   z-index: 1;
 }
 
-/* 欢迎文字动画 */
 .welcome-text {
-  margin-bottom: 60px;
+  margin-bottom: 48px;
 }
 
 .welcome-title {
-  font-size: 56px;
+  font-family: "LXGW WenKai", serif;
+  font-size: 64px;
   font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 16px 0;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  letter-spacing: 2px;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  color: #4a3f3f;
+  margin: 0 0 20px 0;
+  letter-spacing: 0.2em;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
 }
 
-.welcome-title.animate-in {
+.welcome-title .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  text-shadow: 0 2px 12px rgba(236, 72, 153, 0.25);
+}
+
+.welcome-title .char.char-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
 .welcome-subtitle {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 300;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(74, 63, 63, 0.85);
   margin: 0;
+  letter-spacing: 0.3em;
   opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  letter-spacing: 4px;
+  transform: translateY(12px);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .welcome-subtitle.animate-in {
@@ -200,94 +269,10 @@ watch(() => props.ready, (newVal) => {
   transform: translateY(0);
 }
 
-/* 装饰性圆圈 - 涟漪扩散效果 */
-.welcome-decoration {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.decoration-circle {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  visibility: hidden;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-}
-
-.circle-1 {
-  width: 300px;
-  height: 300px;
-  animation: ripple 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite backwards;
-  animation-delay: 0s;
-}
-
-.circle-2 {
-  width: 300px;
-  height: 300px;
-  animation: ripple 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite backwards;
-  animation-delay: 0.7s;
-}
-
-.circle-3 {
-  width: 300px;
-  height: 300px;
-  animation: ripple 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite backwards;
-  animation-delay: 1.4s;
-}
-
-.circle-4 {
-  width: 300px;
-  height: 300px;
-  animation: ripple 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite backwards;
-  animation-delay: 2.1s;
-}
-
-.circle-5 {
-  width: 300px;
-  height: 300px;
-  animation: ripple 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite backwards;
-  animation-delay: 2.8s;
-}
-
-@keyframes ripple {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0;
-    visibility: hidden;
-  }
-  3% {
-    opacity: 0.8;
-    visibility: visible;
-  }
-  50% {
-    opacity: 0.4;
-    visibility: visible;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(3.5);
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
-/* 加载指示器 */
 .welcome-loader {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
   opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(16px);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .welcome-loader.animate-in {
@@ -295,76 +280,35 @@ watch(() => props.ready, (newVal) => {
   transform: translateY(0);
 }
 
-.loader-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ffffff;
-  animation: dotBounce 1.4s ease-in-out infinite;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.4);
-}
-
-.loader-dot:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.loader-dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.loader-dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes dotBounce {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.6;
-  }
-  40% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-}
-
-/* 粒子效果 */
-.particles {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.brush-track {
+  width: 200px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
   overflow: hidden;
-  pointer-events: none;
+  margin: 0 auto 12px;
 }
 
-.particle {
-  position: absolute;
-  background: rgba(236, 72, 153, 0.4);
-  border-radius: 50%;
-  animation: particleFloat 3s ease-in-out infinite;
-  top: -10px;
-  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.3);
+.brush-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #f472b6, #ec4899);
+  border-radius: 3px;
+  animation: brushStroke 1.8s ease-in-out infinite;
 }
 
-@keyframes particleFloat {
-  0% {
-    transform: translateY(0) scale(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(110vh) scale(1);
-    opacity: 0;
-  }
+@keyframes brushStroke {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
 }
 
-/* 淡入淡出过渡 */
+.loader-hint {
+  font-size: 13px;
+  color: rgba(74, 63, 63, 0.7);
+  letter-spacing: 0.2em;
+}
+
 .welcome-fade-enter-active,
 .welcome-fade-leave-active {
   transition: opacity 0.5s ease;

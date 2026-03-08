@@ -35,7 +35,7 @@
                 <a-form-item label="登录账号" name="username">
                   <a-input v-model:value="form.username" disabled/>
                 </a-form-item>
-                <a-form-item label="昵称" name="nickname">
+                <a-form-item label="昵称" name="nickname"  :rules="[{ required: true, message: '请输入昵称' }]">
                   <a-input v-model:value="form.nickname"/>
                 </a-form-item>
                 <a-form-item label="邮箱" name="email">

@@ -28,31 +28,31 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await axios.get('/sysMenu/userMenus')
         const flatMenus = response.data || []
-        
+
         // 提取所有按钮（type=2）
         const buttons = flatMenus.filter(menu => menu.type === '2' || menu.type === 2)
-        
+
         // 从扁平结构构建树形结构
         const buildMenuTree = (menus) => {
           if (!menus || !Array.isArray(menus)) {
             return []
           }
-          
+
           // 过滤出菜单和目录类型（type=0或1）
           const menuList = menus.filter(menu => menu.type === '0' || menu.type === 0 || menu.type === '1' || menu.type === 1)
-          
+
           // 创建菜单映射表，方便查找
           const menuMap = new Map()
           menuList.forEach(menu => {
             menuMap.set(menu.id, { ...menu, children: [] })
           })
-          
+
           // 构建树形结构
           const tree = []
           menuList.forEach(menu => {
             const menuItem = menuMap.get(menu.id)
             const parentId = menu.parentId
-            
+
             if (!parentId || parentId === 0 || parentId === '0') {
               // 顶级菜单
               tree.push(menuItem)
@@ -67,7 +67,7 @@ export const useAuthStore = defineStore('auth', {
               }
             }
           })
-          
+
           // 递归排序子菜单
           const sortMenuTree = (menuTree) => {
             menuTree.sort((a, b) => {
@@ -87,25 +87,10 @@ export const useAuthStore = defineStore('auth', {
               }
             })
           }
-          
+
           sortMenuTree(tree)
 
-          // 移除所有首页菜单（不管后端是否返回，都移除）
-          const isHomeMenu = (menu) => {
-            if (!menu) {
-              return false
-            }
-            const rawPath = (menu.path || '').replace(/^\/+|\/+$/g, '').toLowerCase()
-            const path = rawPath.replace(/^site\//, '')
-            const name = (menu.name || '').trim()
-            return name === '首页' || path === 'index' || path === ''
-          }
-
-          // 移除所有首页菜单
-          const filteredTree = tree.filter(menu => !isHomeMenu(menu))
-
-          // 在最前面插入固定的首页菜单
-          filteredTree.unshift({
+          tree.unshift({
             id: 'fixed_home',
             name: '首页',
             path: 'index',
@@ -114,11 +99,11 @@ export const useAuthStore = defineStore('auth', {
             children: []
           })
 
-          return filteredTree
+          return tree
         }
-        
+
         const menuTree = buildMenuTree(flatMenus)
-        
+
         this.$patch({
           menus: menuTree,
           buttons: buttons
