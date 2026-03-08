@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>site_service</module>
+        <module>site_cms</module>
     </modules>
 
     <properties>

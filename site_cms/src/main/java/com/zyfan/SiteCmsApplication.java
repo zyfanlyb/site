@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableFeignClients
 @EnableDiscoveryClient
 @SpringBootApplication
-public class SiteApplication {
+public class SiteCmsApplication {
     public static void main(String[] args) {
-        SpringApplication.run(SiteApplication.class, args);
+        SpringApplication.run(SiteCmsApplication.class, args);
     }
 }

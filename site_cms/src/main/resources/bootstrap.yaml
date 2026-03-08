@@ -1,10 +1,12 @@
 server:
   port: 11006
   servlet:
-    context-path: /site
+    context-path: /siteCms
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
-    name: site
+    name: site_cms
   profiles:
     active: dev
   cloud:
