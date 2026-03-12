@@ -11,6 +11,7 @@
 
     <modules>
         <module>site_cms</module>
+        <module>site_service</module>
     </modules>
 
     <properties>

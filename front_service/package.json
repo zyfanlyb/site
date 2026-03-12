@@ -1,0 +1,17 @@
+{
+  "name": "front_service",
+  "version": "1.0.0",
+  "description": "VitePress网站前端",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "keywords": ["vitepress", "documentation"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}
