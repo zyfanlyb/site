@@ -56,8 +56,8 @@
 - `POST /cms/article/remove/{id}` - 删除文章
 
 #### 分类管理
-- `POST /cms/category/page` - 分页查询分类列表（树形）
-- `POST /cms/category/list` - 查询所有分类
+- `POST /cms/category/list` - 启用分类列表（不分页，文章表单下拉用）
+- `POST /cms/category/page` - 分页查询分类（配置弹窗用，支持按名称筛选）
 - `POST /cms/category/insert` - 新增分类
 - `POST /cms/category/update` - 更新分类
 - `POST /cms/category/info/{id}` - 获取分类详情
@@ -66,7 +66,7 @@
 ### 网站前端API
 
 - `GET /api/articles?categoryId=1&pageNum=1&pageSize=10` - 获取已发布的文章列表
-- `GET /api/article/{id}` - 获取文章详情（自动增加浏览量）
+- `GET /api/article/{id}` - 获取文章详情
 - `GET /api/categories` - 获取所有分类
 - `GET /api/category/{categoryId}/articles?pageNum=1&pageSize=10` - 根据分类获取文章
 
@@ -80,7 +80,7 @@
 - `cms:article:edit` - 编辑文章
 - `cms:article:view` - 查看文章
 - `cms:article:delete` - 删除文章
-- `cms:category:page` - 分类列表查询
+- `cms:category:list` - 分类配置（文章分类按钮）
 - `cms:category:list` - 分类列表查询
 - `cms:category:add` - 新增分类
 - `cms:category:edit` - 编辑分类

@@ -54,5 +54,17 @@ export default defineConfig({
   lang: 'zh-CN',
   
   // 最后更新时间
-  lastUpdated: true
+  lastUpdated: true,
+  
+  // 开发环境 API 代理到 site_service
+  vite: {
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:11007',
+          changeOrigin: true
+        }
+      }
+    }
+  }
 })

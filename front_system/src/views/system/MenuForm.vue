@@ -103,7 +103,7 @@
     </a-form>
     <div>
       <div style="display: flex; justify-content: flex-end; gap: 16px; padding-top: 16px;">
-        <a-button style="width: 80px;" @click="handleCancel">关闭</a-button>
+        <a-button style="width: 80px;" @click="handleCancel">取消</a-button>
         <a-button v-if="!isDetail" style="width: 80px;" type="primary" :loading="confirmLoading" @click="handleOk">{{ isEdit ? '保存' : '确定' }}</a-button>
       </div>
     </div>

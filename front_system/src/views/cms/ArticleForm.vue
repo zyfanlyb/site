@@ -4,6 +4,8 @@
     :title="formData.id ? '编辑文章' : '新增文章'"
     width="800px"
     :confirmLoading="loading"
+    okText="确认"
+    cancelText="取消"
     @ok="handleSubmit"
     @cancel="handleCancel"
   >
@@ -150,8 +152,13 @@ watch(visible, (val) => {
   }
 })
 
+const refreshCategories = () => {
+  fetchCategoryList()
+}
+
 defineExpose({
-  open
+  open,
+  refreshCategories
 })
 </script>
 

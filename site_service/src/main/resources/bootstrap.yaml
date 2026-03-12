@@ -1,10 +1,8 @@
 server:
-  port: 11006
-  servlet:
-    context-path: /siteCms
+  port: 11007
 spring:
   application:
-    name: site_cms
+    name: site_service
   profiles:
     active: dev
   cloud:
