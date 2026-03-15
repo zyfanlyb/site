@@ -125,7 +125,7 @@ import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { post } from '@/utils/request'
 import service from '@/utils/request'
-import { getFilePreviewUrl } from '@/utils/file'
+import { getAuthFilePreviewUrl } from '@/utils/file'
 
 const showModal = ref(false)
 const formRef = ref()
@@ -206,7 +206,7 @@ const loadUserInfo = async (id) => {
     formState.password = ''
     if (res.data.avatar) {
       // 使用预览URL显示头像（异步获取blob URL）
-      const previewUrl = await getFilePreviewUrl(res.data.avatar)
+      const previewUrl = await getAuthFilePreviewUrl(res.data.avatar)
       avatarPreviewUrl.value = previewUrl
       fileList.value = [{
         uid: '-1',
@@ -261,7 +261,7 @@ const handleUpload = async (options) => {
       // 更新文件列表，使用预览URL（异步获取blob URL）
       const fileIndex = fileList.value.findIndex(item => item.uid === file.uid)
       if (fileIndex > -1) {
-        const previewUrl = await getFilePreviewUrl(filePath)
+        const previewUrl = await getAuthFilePreviewUrl(filePath)
         fileList.value[fileIndex] = {
           ...fileList.value[fileIndex],
           status: 'done',
@@ -298,7 +298,7 @@ const handlePreview = async (file) => {
   // 优先按文件路径走 /file/preview，与头像显示逻辑一致
   const filePath = file.filePath || formState.avatar
   if (filePath) {
-    const previewUrl = await getFilePreviewUrl(filePath)
+    const previewUrl = await getAuthFilePreviewUrl(filePath)
     if (previewUrl) {
       window.open(previewUrl, '_blank')
       return

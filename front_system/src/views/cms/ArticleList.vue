@@ -9,6 +9,10 @@
       ref="categoryConfigRef"
       @updated="handleCategoryUpdated"
     />
+    <TypeConfig
+      ref="typeConfigRef"
+      @updated="handleTypeUpdated"
+    />
     <div class="search-container">
       <a-form layout="inline" :model="searchForm">
         <a-form-item label="标题">
@@ -32,6 +36,10 @@
               <template #icon><FolderOutlined /></template>
               文章分类
             </a-button>
+            <a-button v-if="hasTypeConfigPermission" @click="handleConfigType">
+              <template #icon><TagsOutlined /></template>
+              文章类型
+            </a-button>
           </a-space>
         </a-form-item>
       </a-form>
@@ -41,7 +49,7 @@
         :columns="columns"
         :data-source="dataSource"
         :row-key="record => record.id"
-        :pagination="pagination"
+        :pagination="false"
         :loading="loading"
         :scroll="{ y: 'calc(100vh - 450px)' }"
       >
@@ -63,6 +71,16 @@
           </template>
         </template>
       </a-table>
+      <div class="pagination-wrapper">
+        <a-pagination
+          v-model:current="pagination.current"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :show-size-changer="false"
+          :show-total="(total) => `共 ${total} 条`"
+          @change="handleTableChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -70,12 +88,14 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { PlusOutlined, FolderOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, FolderOutlined, TagsOutlined } from '@ant-design/icons-vue'
 import { post } from '@/utils/request'
 import { usePermission } from '@/composables/usePermission'
+import { usePagination, resetPagination } from '@/utils/pagination'
 import ArticleForm from './ArticleForm.vue'
 import ArticleDetail from './ArticleDetail.vue'
 import CategoryConfig from './CategoryConfig.vue'
+import TypeConfig from './TypeConfig.vue'
 
 // 权限检查
 const { checkPermission } = usePermission()
@@ -84,10 +104,12 @@ const hasViewPermission = computed(() => checkPermission('cms:article:view'))
 const hasEditPermission = computed(() => checkPermission('cms:article:edit'))
 const hasDeletePermission = computed(() => checkPermission('cms:article:delete'))
 const hasCategoryConfigPermission = computed(() => checkPermission('cms:category:page'))
+const hasTypeConfigPermission = computed(() => checkPermission('cms:type:page'))
 
 const articleFormRef = ref(null)
 const articleDetailRef = ref(null)
 const categoryConfigRef = ref(null)
+const typeConfigRef = ref(null)
 const loading = ref(false)
 const dataSource = ref([])
 const searchForm = reactive({
@@ -95,18 +117,7 @@ const searchForm = reactive({
   status: undefined
 })
 
-const pagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 0,
-  showSizeChanger: true,
-  showTotal: (total) => `共 ${total} 条`,
-  onChange: (page, pageSize) => {
-    pagination.current = page
-    pagination.pageSize = pageSize
-    fetchData()
-  }
-})
+const pagination = usePagination()
 
 // 操作列根据权限动态显示
 const hasAnyActionPermission = computed(() => hasViewPermission.value || hasEditPermission.value || hasDeletePermission.value)
@@ -116,6 +127,7 @@ const columns = computed(() => {
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { title: '标题', dataIndex: 'title', key: 'title', width: 120, ellipsis: true },
     { title: '分类', dataIndex: 'categoryName', key: 'categoryName', width: 120 },
+    { title: '类型', dataIndex: 'typeName', key: 'typeName', width: 100 },
     { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
     { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 180 }
   ]
@@ -136,10 +148,13 @@ const fetchData = async () => {
         status: searchForm.status !== undefined ? Number(searchForm.status) : undefined
       }
     })
-    // 统一响应格式：data为数组，page包含分页信息
+    // 兼容两种返回：data 为数组时用 res.page?.total；data 为分页对象时用 res.data.records 与 res.data.total
     if (Array.isArray(res.data)) {
       dataSource.value = res.data
-      pagination.total = res.page?.total || 0
+      pagination.total = res.page?.total ?? res.data.length
+    } else if (res.data && Array.isArray(res.data.records)) {
+      dataSource.value = res.data.records
+      pagination.total = res.data.total ?? 0
     } else {
       dataSource.value = []
       pagination.total = 0
@@ -152,10 +167,16 @@ const fetchData = async () => {
   }
 }
 
+const handleTableChange = (page, pageSize) => {
+  if (page) pagination.current = page
+  if (pageSize) pagination.pageSize = pageSize
+  fetchData()
+}
+
 const resetSearch = () => {
   searchForm.title = ''
   searchForm.status = undefined
-  pagination.current = 1
+  resetPagination(pagination)
   fetchData()
 }
 
@@ -167,8 +188,16 @@ const handleConfigCategory = () => {
   categoryConfigRef.value?.open()
 }
 
+const handleConfigType = () => {
+  typeConfigRef.value?.open()
+}
+
 const handleCategoryUpdated = () => {
   articleFormRef.value?.refreshCategories?.()
+}
+
+const handleTypeUpdated = () => {
+  articleFormRef.value?.refreshTypes?.()
 }
 
 const handleDetail = (record) => {
@@ -214,22 +243,96 @@ onMounted(() => {
 
 <style scoped>
 .article-container {
-  padding: 24px;
-  background: #fff;
-  height: 100%;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .search-container {
+  height: 12%;
+  min-height: 80px;
+  max-height: 120px;
   margin-bottom: 16px;
   padding: 16px;
-  background: #fafafa;
-  border-radius: 4px;
+  background: #fff;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-radius: var(--sky-radius-md);
 }
 
 .table-wrapper {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
+  width: 100%;
   overflow: hidden;
+  background: #fff;
+  border-radius: var(--sky-radius-md);
+}
+
+.article-container :deep(.ant-table-wrapper) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.article-container :deep(.ant-table) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.article-container :deep(.ant-table-container) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.article-container :deep(.ant-table-body) {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.article-container :deep(.ant-table-body)::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.article-container :deep(.ant-table-thead) {
+  flex-shrink: 0;
+}
+
+.article-container :deep(.ant-table-tbody) {
+  overflow-y: auto !important;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.article-container :deep(.ant-table-tbody)::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.pagination-wrapper {
+  padding: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: #fff;
 }
 </style>

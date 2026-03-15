@@ -102,7 +102,7 @@ import type {FormInstance} from 'ant-design-vue';
 import {useAuthStore} from '@/stores/auth';
 import {storeToRefs} from 'pinia';
 import service from '@/utils/request';
-import {getFilePreviewUrl} from '@/utils/file';
+import {getAuthFilePreviewUrl} from '@/utils/file';
 
 const authStore = useAuthStore();
 const {userInfo} = storeToRefs(authStore);
@@ -226,7 +226,7 @@ onMounted(async () => {
 // 同 Home.vue，一样根据 userInfo.avatar 生成预览 URL
 watchEffect(async () => {
   if (userInfo.value?.avatar) {
-    avatarUrl.value = await getFilePreviewUrl(userInfo.value.avatar);
+    avatarUrl.value = await getAuthFilePreviewUrl(userInfo.value.avatar);
   } else {
     avatarUrl.value = '';
   }

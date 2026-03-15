@@ -307,6 +307,7 @@ onMounted(() => {
   height: 100%;
   min-height: 0;
   width: 100%;
+  table-layout: fixed;
 }
 
 .user-container :deep(.ant-table-container) {

@@ -11,7 +11,7 @@ const blobUrlCache = new Map()
  * @param {string} objectName - 文件路径（objectName，格式：yyyy/MM/dd/uuid.extension）
  * @returns {Promise<string>} 预览URL（blob URL）
  */
-export async function getFilePreviewUrl(objectName) {
+export async function getAuthFilePreviewUrl(objectName) {
   if (!objectName) {
     return ''
   }
@@ -22,7 +22,7 @@ export async function getFilePreviewUrl(objectName) {
   }
   
   try {
-    const url = `/file/preview`
+    const url = `/file/auth/preview`
 
     // 使用 POST 请求并通过表单参数传递文件名（参数名：fileName）
     const formData = new FormData()
@@ -46,18 +46,26 @@ export async function getFilePreviewUrl(objectName) {
   }
 }
 
+const cmsBlobUrlCache = new Map()
+
 /**
- * 获取文件预览URL（同步版本，用于需要立即返回URL的场景）
- * @param {string} objectName - 文件路径
- * @returns {string} 预览URL
- * @deprecated 请使用异步版本的getFilePreviewUrl
+ * 获取 CMS 文件预览 URL（FileController /file/preview，带 token）
+ * @param {string} objectName - 文件路径（objectName，如 yyyy/MM/dd/uuid.jpg）
+ * @returns {Promise<string>} 预览 blob URL
  */
-export function getFilePreviewUrlSync(objectName) {
-  if (!objectName) {
+export async function getCmsFilePreviewUrl(objectName) {
+  if (!objectName) return ''
+  if (cmsBlobUrlCache.has(objectName)) return cmsBlobUrlCache.get(objectName)
+  try {
+    const response = await service.get('/file/preview', {
+      params: { objectName },
+      responseType: 'blob'
+    })
+    const blobUrl = URL.createObjectURL(response.data)
+    cmsBlobUrlCache.set(objectName, blobUrl)
+    return blobUrl
+  } catch (e) {
+    console.error('CMS 文件预览失败:', e)
     return ''
   }
-  
-  const baseURL = import.meta.env.VITE_APP_BASE_API || ''
-  // 仅用于构建 URL，这里也将参数名改为 fileName 以与接口保持一致
-  return `${baseURL}/file/preview?fileName=${encodeURIComponent(objectName)}`
 }

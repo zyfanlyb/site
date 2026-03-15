@@ -3,14 +3,15 @@ package com.zyfan.site_cms.cms.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
 import java.util.Date;
 
 /**
- * CMS文章表
+ * CMS类型表（分类下的子类型）
  */
 @Data
-@TableName("cms_article")
-public class CmsArticle {
+@TableName("cms_type")
+public class CmsType {
 
     /**
      * 主键ID
@@ -19,52 +20,34 @@ public class CmsArticle {
     private Long id;
 
     /**
-     * 文章标题
-     */
-    @TableField("title")
-    private String title;
-
-    /**
      * 分类ID
      */
     @TableField("category_id")
     private Long categoryId;
 
     /**
-     * 类型ID（分类下的类型）
+     * 类型名称
      */
-    @TableField("type_id")
-    private Long typeId;
+    @TableField("name")
+    private String name;
 
     /**
-     * 文章摘要
+     * 类型描述
      */
-    @TableField("summary")
-    private String summary;
-
-    /**
-     * 文章内容
-     */
-    @TableField("content")
-    private String content;
-
-    /**
-     * 封面图URL
-     */
-    @TableField("cover")
-    private String cover;
-
-    /**
-     * 状态(0:草稿,1:已发布)
-     */
-    @TableField("status")
-    private Integer status;
+    @TableField("description")
+    private String description;
 
     /**
      * 排序
      */
     @TableField("sort")
     private Integer sort;
+
+    /**
+     * 状态(0:禁用,1:启用)
+     */
+    @TableField("status")
+    private Boolean status;
 
     /**
      * 创建时间
@@ -98,17 +81,5 @@ public class CmsArticle {
      */
     @TableField("update_by")
     private String updateBy;
-
-    /**
-     * 分类名称（非数据库字段，用于前端显示）
-     */
-    @TableField(exist = false)
-    private String categoryName;
-
-    /**
-     * 类型名称（非数据库字段，用于前端显示）
-     */
-    @TableField(exist = false)
-    private String typeName;
 
 }

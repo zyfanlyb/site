@@ -52,8 +52,8 @@ onMounted(() => {
   <ul v-else>
     <li v-for="item in articles" :key="item.id" style="margin-bottom: 12px;">
       <strong>{{ item.title }}</strong>
-      <span v-if="item.categoryName" style="margin-left: 8px; color: #888;">
-        [{{ item.categoryName }}]
+      <span v-if="item.categoryName || item.typeName" style="margin-left: 8px; color: #888;">
+        [{{ [item.categoryName, item.typeName].filter(Boolean).join(' / ') }}]
       </span>
       <div style="font-size: 13px; color: #666; margin-top: 4px;">
         {{ item.summary || '暂无摘要' }}

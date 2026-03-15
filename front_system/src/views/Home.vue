@@ -78,7 +78,7 @@ import { useAuthStore } from '@/stores/auth';
 import {storeToRefs} from "pinia";
 import service from '@/utils/request';
 import { message } from 'ant-design-vue';
-import { getFilePreviewUrl } from '@/utils/file';
+import { getAuthFilePreviewUrl } from '@/utils/file';
 
 const state = ref({
   collapsed: false,
@@ -100,7 +100,7 @@ const avatarUrl = ref('');
 // 监听userInfo变化，异步加载头像URL
 watchEffect(async () => {
   if (userInfo.value?.avatar) {
-    avatarUrl.value = await getFilePreviewUrl(userInfo.value.avatar);
+    avatarUrl.value = await getAuthFilePreviewUrl(userInfo.value.avatar);
   } else {
     avatarUrl.value = '';
   }

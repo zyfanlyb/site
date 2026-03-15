@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyfan.site_cms.cms.entity.CmsArticle;
 import com.zyfan.site_cms.cms.entity.CmsCategory;
+import com.zyfan.site_cms.cms.entity.CmsType;
 import com.zyfan.site_cms.cms.mapper.CmsArticleMapper;
 import com.zyfan.site_cms.cms.mapper.CmsCategoryMapper;
+import com.zyfan.site_cms.cms.mapper.CmsTypeMapper;
 import com.zyfan.site_cms.cms.service.ICmsArticleService;
 import com.zyfan.pojo.web.RequestVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
     @Autowired
     private CmsCategoryMapper cmsCategoryMapper;
 
+    @Autowired
+    private CmsTypeMapper cmsTypeMapper;
+
     @Override
     public IPage<CmsArticle> pageList(RequestVo<CmsArticle> requestVo) {
         CmsArticle params = requestVo.getData();
@@ -45,6 +50,9 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
             if (params.getCategoryId() != null) {
                 wrapper.eq(CmsArticle::getCategoryId, params.getCategoryId());
             }
+            if (params.getTypeId() != null) {
+                wrapper.eq(CmsArticle::getTypeId, params.getTypeId());
+            }
             if (params.getStatus() != null) {
                 wrapper.eq(CmsArticle::getStatus, params.getStatus());
             }
@@ -55,8 +63,8 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
 
         IPage<CmsArticle> result = cmsArticleMapper.selectPage(page, wrapper);
 
-        // 填充分类名称
-        fillCategoryName(result.getRecords());
+        // 填充分类名称和类型名称
+        fillCategoryAndTypeName(result.getRecords());
 
         return result;
     }
@@ -74,6 +82,9 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
             if (params.getCategoryId() != null) {
                 wrapper.eq(CmsArticle::getCategoryId, params.getCategoryId());
             }
+            if (params.getTypeId() != null) {
+                wrapper.eq(CmsArticle::getTypeId, params.getTypeId());
+            }
             if (params.getStatus() != null) {
                 wrapper.eq(CmsArticle::getStatus, params.getStatus());
             }
@@ -84,45 +95,46 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
 
         List<CmsArticle> result = cmsArticleMapper.selectList(wrapper);
 
-        // 填充分类名称
-        fillCategoryName(result);
+        // 填充分类名称和类型名称
+        fillCategoryAndTypeName(result);
 
         return result;
     }
 
     /**
-     * 填充分类名称
+     * 填充分类名称和类型名称
      */
-    private void fillCategoryName(List<CmsArticle> articles) {
+    private void fillCategoryAndTypeName(List<CmsArticle> articles) {
         if (articles == null || articles.isEmpty()) {
             return;
         }
 
-        // 获取所有分类ID
+        // 获取所有分类ID和类型ID
         List<Long> categoryIds = articles.stream()
                 .map(CmsArticle::getCategoryId)
                 .filter(id -> id != null)
                 .distinct()
                 .collect(Collectors.toList());
+        List<Long> typeIds = articles.stream()
+                .map(CmsArticle::getTypeId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
 
-        if (categoryIds.isEmpty()) {
-            return;
-        }
+        Map<Long, String> categoryMap = categoryIds.isEmpty() ? Map.of() : cmsCategoryMapper.selectList(
+                Wrappers.lambdaQuery(CmsCategory.class).in(CmsCategory::getId, categoryIds)
+        ).stream().collect(Collectors.toMap(CmsCategory::getId, CmsCategory::getName, (v1, v2) -> v1));
 
-        // 批量查询分类
-        List<CmsCategory> categories = cmsCategoryMapper.selectList(
-                Wrappers.lambdaQuery(CmsCategory.class)
-                        .in(CmsCategory::getId, categoryIds)
-        );
+        Map<Long, String> typeMap = typeIds.isEmpty() ? Map.of() : cmsTypeMapper.selectList(
+                Wrappers.lambdaQuery(CmsType.class).in(CmsType::getId, typeIds)
+        ).stream().collect(Collectors.toMap(CmsType::getId, CmsType::getName, (v1, v2) -> v1));
 
-        // 构建分类ID到名称的映射
-        Map<Long, String> categoryMap = categories.stream()
-                .collect(Collectors.toMap(CmsCategory::getId, CmsCategory::getName, (v1, v2) -> v1));
-
-        // 填充分类名称
         articles.forEach(article -> {
             if (article.getCategoryId() != null) {
                 article.setCategoryName(categoryMap.get(article.getCategoryId()));
+            }
+            if (article.getTypeId() != null) {
+                article.setTypeName(typeMap.get(article.getTypeId()));
             }
         });
     }
@@ -152,10 +164,18 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
     @Override
     public CmsArticle info(Long id) {
         CmsArticle article = cmsArticleMapper.selectById(id);
-        if (article != null && article.getCategoryId() != null) {
-            CmsCategory category = cmsCategoryMapper.selectById(article.getCategoryId());
-            if (category != null) {
-                article.setCategoryName(category.getName());
+        if (article != null) {
+            if (article.getCategoryId() != null) {
+                CmsCategory category = cmsCategoryMapper.selectById(article.getCategoryId());
+                if (category != null) {
+                    article.setCategoryName(category.getName());
+                }
+            }
+            if (article.getTypeId() != null) {
+                CmsType type = cmsTypeMapper.selectById(article.getTypeId());
+                if (type != null) {
+                    article.setTypeName(type.getName());
+                }
             }
         }
         return article;

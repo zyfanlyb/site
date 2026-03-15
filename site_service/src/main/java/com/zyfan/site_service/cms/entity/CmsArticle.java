@@ -32,6 +32,12 @@ public class CmsArticle {
     private Long categoryId;
 
     /**
+     * 类型ID（分类下的类型）
+     */
+    @TableField("type_id")
+    private Long typeId;
+
+    /**
      * 文章摘要
      */
     @TableField("summary")
@@ -99,5 +105,11 @@ public class CmsArticle {
      */
     @TableField(exist = false)
     private String categoryName;
+
+    /**
+     * 类型名称（非数据库字段，用于前端显示）
+     */
+    @TableField(exist = false)
+    private String typeName;
 
 }
