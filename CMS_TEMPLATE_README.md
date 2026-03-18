@@ -34,10 +34,10 @@
 
 1. **前端API接口**
    - `SiteController` - 提供给VitePress等前端网站使用的API
-     - `GET /api/articles` - 获取文章列表
-     - `GET /api/article/{id}` - 获取文章详情
-     - `GET /api/categories` - 获取分类列表
-     - `GET /api/category/{categoryId}/articles` - 根据分类获取文章
+     - `GET /blogs/articles` - 获取文章列表
+     - `GET /blogs/article/{id}` - 获取文章详情
+     - `GET /blogs/categories` - 获取分类列表
+     - `GET /blogs/category/{categoryId}/articles` - 根据分类获取文章
 
 ## 数据库初始化
 
@@ -65,10 +65,10 @@
 
 ### 网站前端API
 
-- `GET /api/articles?categoryId=1&pageNum=1&pageSize=10` - 获取已发布的文章列表
-- `GET /api/article/{id}` - 获取文章详情
-- `GET /api/categories` - 获取所有分类
-- `GET /api/category/{categoryId}/articles?pageNum=1&pageSize=10` - 根据分类获取文章
+- `GET /blogs/articles?categoryId=1&pageNum=1&pageSize=10` - 获取已发布的文章列表
+- `GET /blogs/article/{id}` - 获取文章详情
+- `GET /blogs/categories` - 获取所有分类
+- `GET /blogs/category/{categoryId}/articles?pageNum=1&pageSize=10` - 根据分类获取文章
 
 ## 权限配置
 

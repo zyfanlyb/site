@@ -1,6 +1,7 @@
 package com.zyfan.site_cms.interceptor;
 
 import com.alibaba.fastjson2.JSON;
+import com.zyfan.site_cms.anno.NoAuth;
 import com.zyfan.site_cms.anno.Permission;
 import com.zyfan.client.AuthClient;
 import com.zyfan.exception.ZException;
@@ -42,6 +43,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
         HandlerMethod handlerMethod = (HandlerMethod) handler;
+        // NoAuth 标记的接口直接放行
+        NoAuth authFlag = handlerMethod.getMethodAnnotation(NoAuth.class);
+        if (authFlag != null) {
+            return true;
+        }
         Permission permission = handlerMethod.getMethodAnnotation(Permission.class);
 
         String token = request.getHeader("Authorization");

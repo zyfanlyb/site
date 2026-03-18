@@ -59,3 +59,15 @@ CREATE TABLE IF NOT EXISTS `cms_article` (
   KEY `idx_deleted` (`deleted`),
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CMS文章表';
+
+-- CMS文章-封面图片表（一对多）
+CREATE TABLE IF NOT EXISTS `cms_article_cover` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `article_id` BIGINT(20) NOT NULL COMMENT '文章ID',
+  `object_name` VARCHAR(500) NOT NULL COMMENT 'MinIO对象路径（objectName）',
+  `sort` INT(11) DEFAULT 0 COMMENT '排序',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_article_id` (`article_id`),
+  KEY `idx_sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CMS文章-封面图片表';

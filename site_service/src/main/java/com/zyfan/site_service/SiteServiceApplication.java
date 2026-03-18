@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
-@EnableFeignClients
+@EnableFeignClients(basePackages = "com.zyfan.client")
 @EnableDiscoveryClient
 @SpringBootApplication(scanBasePackages = {"com.zyfan"})
 public class SiteServiceApplication {

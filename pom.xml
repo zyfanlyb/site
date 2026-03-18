@@ -12,6 +12,7 @@
     <modules>
         <module>site_cms</module>
         <module>site_service</module>
+        <module>site_cms_interface</module>
     </modules>
 
     <properties>

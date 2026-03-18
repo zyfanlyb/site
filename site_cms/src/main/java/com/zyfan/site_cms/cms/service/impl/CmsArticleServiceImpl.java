@@ -6,19 +6,24 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyfan.site_cms.cms.entity.CmsArticle;
+import com.zyfan.site_cms.cms.entity.CmsArticleCover;
 import com.zyfan.site_cms.cms.entity.CmsCategory;
 import com.zyfan.site_cms.cms.entity.CmsType;
 import com.zyfan.site_cms.cms.mapper.CmsArticleMapper;
+import com.zyfan.site_cms.cms.mapper.CmsArticleCoverMapper;
 import com.zyfan.site_cms.cms.mapper.CmsCategoryMapper;
 import com.zyfan.site_cms.cms.mapper.CmsTypeMapper;
 import com.zyfan.site_cms.cms.service.ICmsArticleService;
 import com.zyfan.pojo.web.RequestVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +31,9 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
 
     @Autowired
     private CmsArticleMapper cmsArticleMapper;
+
+    @Autowired
+    private CmsArticleCoverMapper cmsArticleCoverMapper;
 
     @Autowired
     private CmsCategoryMapper cmsCategoryMapper;
@@ -65,6 +73,8 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
 
         // 填充分类名称和类型名称
         fillCategoryAndTypeName(result.getRecords());
+        // 填充封面 coverImages（从 cms_article_cover 一对多查询）
+        fillCoverImages(result.getRecords());
 
         return result;
     }
@@ -97,8 +107,71 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
 
         // 填充分类名称和类型名称
         fillCategoryAndTypeName(result);
+        // 填充封面 coverImages（从 cms_article_cover 一对多查询）
+        fillCoverImages(result);
 
         return result;
+    }
+
+    private void fillCoverImages(List<CmsArticle> articles) {
+        if (articles == null || articles.isEmpty()) {
+            return;
+        }
+        List<Long> articleIds = articles.stream()
+                .map(CmsArticle::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (articleIds.isEmpty()) {
+            return;
+        }
+
+        List<CmsArticleCover> coverRecords = cmsArticleCoverMapper.selectList(
+                Wrappers.lambdaQuery(CmsArticleCover.class)
+                        .in(CmsArticleCover::getArticleId, articleIds)
+                        .orderByDesc(CmsArticleCover::getSort)
+                        .orderByDesc(CmsArticleCover::getCreateTime)
+        );
+
+        Map<Long, List<String>> coverImagesByArticleId = new HashMap<>();
+        for (CmsArticleCover record : coverRecords) {
+            if (record == null || record.getArticleId() == null) continue;
+            coverImagesByArticleId
+                    .computeIfAbsent(record.getArticleId(), k -> new java.util.ArrayList<>())
+                    .add(record.getObjectName());
+        }
+
+        for (CmsArticle article : articles) {
+            if (article == null || article.getId() == null) continue;
+            article.setCoverImages(coverImagesByArticleId.getOrDefault(article.getId(), List.of()));
+        }
+    }
+
+    private void replaceCovers(Long articleId, List<String> coverImages) {
+        if (articleId == null) return;
+
+        // 先删后插（简单可靠）
+        cmsArticleCoverMapper.delete(
+                Wrappers.lambdaQuery(CmsArticleCover.class).eq(CmsArticleCover::getArticleId, articleId)
+        );
+
+        if (coverImages == null || coverImages.isEmpty()) {
+            return;
+        }
+
+        int sort = 0;
+        for (String objectName : coverImages) {
+            if (objectName == null) continue;
+            String trimmed = objectName.trim();
+            if (trimmed.isEmpty()) continue;
+
+            CmsArticleCover record = new CmsArticleCover();
+            record.setArticleId(articleId);
+            record.setObjectName(trimmed);
+            record.setSort(sort++);
+            record.setCreateTime(new Date());
+            cmsArticleCoverMapper.insert(record);
+        }
     }
 
     /**
@@ -140,31 +213,29 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void insert(RequestVo<CmsArticle> requestVo) {
         CmsArticle article = requestVo.getData();
-        if (article.getCreateTime() == null) {
-            article.setCreateTime(new Date());
-        }
-        if (article.getUpdateTime() == null) {
-            article.setUpdateTime(new Date());
-        }
         if (article.getStatus() == null) {
             article.setStatus(0); // 默认草稿
         }
         cmsArticleMapper.insert(article);
+        replaceCovers(article.getId(), article.getCoverImages());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void update(RequestVo<CmsArticle> requestVo) {
         CmsArticle article = requestVo.getData();
-        article.setUpdateTime(new Date());
         cmsArticleMapper.updateById(article);
+        replaceCovers(article.getId(), article.getCoverImages());
     }
 
     @Override
     public CmsArticle info(Long id) {
         CmsArticle article = cmsArticleMapper.selectById(id);
         if (article != null) {
+            fillCoverImages(List.of(article));
             if (article.getCategoryId() != null) {
                 CmsCategory category = cmsCategoryMapper.selectById(article.getCategoryId());
                 if (category != null) {
@@ -182,7 +253,11 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void remove(Long id) {
+        cmsArticleCoverMapper.delete(
+                Wrappers.lambdaQuery(CmsArticleCover.class).eq(CmsArticleCover::getArticleId, id)
+        );
         cmsArticleMapper.deleteById(id);
     }
 }

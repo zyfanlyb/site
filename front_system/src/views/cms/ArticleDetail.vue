@@ -25,12 +25,19 @@
         <a-form-item label="内容">
           <a-textarea :value="detail.content || '-'" :rows="10" disabled class="detail-content" />
         </a-form-item>
-        <a-form-item label="封面图">
-          <template v-if="detail.cover">
-            <div class="cover-preview">
-              <img v-if="coverPreviewUrl" :src="coverPreviewUrl" alt="封面" class="cover-img" />
-              <a v-if="coverPreviewUrl" :href="coverPreviewUrl" target="_blank" rel="noopener noreferrer">新窗口预览</a>
-              <span v-else class="cover-path">{{ detail.cover }}</span>
+        <a-form-item label="封面图片">
+          <template v-if="coverPreviewUrls.length">
+            <div class="cover-grid">
+              <a
+                v-for="(u, i) in coverPreviewUrls"
+                :key="`cover-${i}`"
+                :href="u"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="cover-link"
+              >
+                <img :src="u" alt="封面" class="cover-img" />
+              </a>
             </div>
           </template>
           <span v-else>-</span>
@@ -40,9 +47,6 @@
             <a-radio :value="0">草稿</a-radio>
             <a-radio :value="1">已发布</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item label="排序">
-          <a-input :value="String(detail.sort ?? '-')" disabled />
         </a-form-item>
         <a-form-item label="创建时间">
           <a-input :value="detail.createTime || '-'" disabled />
@@ -68,18 +72,24 @@ import { getCmsFilePreviewUrl } from '@/utils/file'
 const visible = ref(false)
 const loading = ref(false)
 const detail = ref(null)
-const coverPreviewUrl = ref('')
+const coverPreviewUrls = ref([])
 
 const fetchDetail = async (id) => {
   try {
     loading.value = true
     detail.value = null
-    coverPreviewUrl.value = ''
+    coverPreviewUrls.value = []
     const res = await post(`/cms/article/info/${id}`)
     if (res.data) {
       detail.value = res.data
-      if (res.data.cover) {
-        coverPreviewUrl.value = await getCmsFilePreviewUrl(res.data.cover)
+      const coversRaw = res.data.coverImages ?? (res.data.cover ? [res.data.cover] : [])
+      const covers = Array.isArray(coversRaw) ? coversRaw : []
+      const objectNames = covers
+        .map((x) => (x == null ? '' : String(x)).trim())
+        .filter(Boolean)
+      if (objectNames.length) {
+        const urls = await Promise.all(objectNames.map((obj) => getCmsFilePreviewUrl(obj)))
+        coverPreviewUrls.value = urls.filter(Boolean)
       }
     }
   } catch (error) {
@@ -125,10 +135,18 @@ defineExpose({
   flex-direction: column;
   gap: 8px;
 }
+.cover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.cover-link {
+  display: block;
+}
 .cover-img {
-  max-width: 300px;
-  max-height: 200px;
-  object-fit: contain;
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
   border-radius: 4px;
   border: 1px solid #eee;
 }

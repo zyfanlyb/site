@@ -4,7 +4,7 @@ server:
     context-path: /siteCms
 spring:
   application:
-    name: site_cms
+    name: site-cms
   profiles:
     active: dev
   cloud:

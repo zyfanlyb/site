@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.util.Date;
+import java.util.List;
 
 /**
  * CMS文章表
@@ -49,10 +50,10 @@ public class CmsArticle {
     private String content;
 
     /**
-     * 封面图URL
+     * 多封面（一对多：cms_article_cover），非数据库字段
      */
-    @TableField("cover")
-    private String cover;
+    @TableField(exist = false)
+    private List<String> coverImages;
 
     /**
      * 状态(0:草稿,1:已发布)

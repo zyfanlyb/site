@@ -38,7 +38,7 @@ service.interceptors.response.use(
                 const authStore = useAuthStore();
                 var redirectUrl = authStore.redirectUrl;
                 authStore.clearToken()
-                window.location.href = (redirectUrl||import.meta.env.VITE_LOGIN_DOMAIN||window.location.origin)?redirectUrl+'?logout=true':'/auth/login?redirectUrl=' + encodeURIComponent(window.location.origin);
+                window.location.href = `(${redirectUrl||import.meta.env.VITE_LOGIN_DOMAIN||window.location.origin})+ ${redirectUrl?'?logout=true':'/auth/login?redirectUrl=' + encodeURIComponent(window.location.origin)}`;
             }
             message.error(res.message || 'Error');
             return Promise.reject(new Error(res.message || 'Error'));
@@ -51,7 +51,8 @@ service.interceptors.response.use(
             const authStore = useAuthStore();
             var redirectUrl = (import.meta.env.VITE_LOGIN_DOMAIN || authStore.redirectUrl)
             authStore.clearToken()
-            window.location.href = (redirectUrl||import.meta.env.VITE_LOGIN_DOMAIN||window.location.origin)?redirectUrl+'?logout=true':'/auth/login?redirectUrl=' + encodeURIComponent(window.location.origin);
+            // window.location.href = (redirectUrl||import.meta.env.VITE_LOGIN_DOMAIN||window.location.origin)?redirectUrl+'?logout=true':'/auth/login?redirectUrl=' + encodeURIComponent(window.location.origin);
+            window.location.href = `(${redirectUrl||import.meta.env.VITE_LOGIN_DOMAIN||window.location.origin})+ ${redirectUrl?'?logout=true':'/auth/login?redirectUrl=' + encodeURIComponent(window.location.origin)}`;
         }
         return Promise.reject(error);
     }

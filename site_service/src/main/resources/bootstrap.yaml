@@ -2,7 +2,7 @@ server:
   port: 11007
 spring:
   application:
-    name: site_service
+    name: site-service
   profiles:
     active: dev
   cloud:

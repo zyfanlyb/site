@@ -1,5 +1,6 @@
 package com.zyfan.site_cms.cms.controller;
 
+import com.zyfan.site_cms.anno.NoAuth;
 import com.zyfan.site_cms.anno.Permission;
 import com.zyfan.site_cms.cms.entity.CmsType;
 import com.zyfan.site_cms.cms.service.ICmsTypeService;
@@ -23,6 +24,7 @@ public class CmsTypeController {
     /**
      * 根据分类ID获取启用的类型列表（不分页，文章表单下拉用）
      */
+    @NoAuth
     @Permission("cms:article:page")
     @PostMapping("/list")
     public ResponseVo<List<CmsType>> list(@RequestBody(required = false) RequestVo<CmsType> requestVo) {

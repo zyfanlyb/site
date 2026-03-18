@@ -63,17 +63,17 @@
           <MdEditor v-model="formData.content" :preview="true" :language="'zh-CN'" class="md-editor-inner" />
         </div>
       </a-form-item>
-      <a-form-item label="封面图" name="cover">
+      <a-form-item label="封面图片" name="coverImages">
         <a-upload
           v-model:file-list="coverFileList"
           list-type="picture-card"
           :custom-request="handleCoverUpload"
           :before-upload="beforeCoverUpload"
           @remove="handleCoverRemove"
-          :max-count="1"
+          :max-count="6"
           accept="image/*"
         >
-          <div v-if="coverFileList.length < 1">
+          <div v-if="coverFileList.length < 6">
             <PlusOutlined />
             <div style="margin-top: 8px">上传封面</div>
           </div>
@@ -179,6 +179,7 @@ const formData = reactive({
   summary: '',
   content: '',
   cover: '',
+  coverImages: [],
   status: 0
 })
 
@@ -195,6 +196,7 @@ const resetForm = () => {
   formData.summary = ''
   formData.content = ''
   formData.cover = ''
+  formData.coverImages = []
   formData.status = 0
   typeList.value = []
   coverFileList.value = []
@@ -224,17 +226,23 @@ const handleCoverUpload = async (options) => {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     if (response.code === 200 && response.data) {
-      formData.cover = response.data
-      const idx = coverFileList.value.findIndex(item => item.uid === file.uid)
-      if (idx > -1) {
-        const previewUrl = await getCmsFilePreviewUrl(response.data)
-        coverFileList.value[idx] = {
-          ...coverFileList.value[idx],
-          status: 'done',
-          url: previewUrl,
-          filePath: response.data
-        }
+      // 以 coverImages 为准；同时兼容旧字段 cover（取第一张）
+      if (!Array.isArray(formData.coverImages)) formData.coverImages = []
+      formData.coverImages.push(response.data)
+      formData.cover = formData.coverImages[0] || ''
+
+      const idx = coverFileList.value.findIndex((item) => item.uid === file.uid)
+      const previewUrl = await getCmsFilePreviewUrl(response.data)
+      const patch = {
+        uid: file.uid,
+        name: file.name || 'cover',
+        status: 'done',
+        url: previewUrl,
+        filePath: response.data
       }
+      if (idx > -1) coverFileList.value[idx] = { ...coverFileList.value[idx], ...patch }
+      else coverFileList.value.push(patch)
+
       onSuccess(response.data, file)
       message.success('封面上传成功')
     } else {
@@ -246,8 +254,12 @@ const handleCoverUpload = async (options) => {
   }
 }
 
-const handleCoverRemove = () => {
-  formData.cover = ''
+const handleCoverRemove = (file) => {
+  const filePath = file?.filePath
+  if (filePath && Array.isArray(formData.coverImages)) {
+    formData.coverImages = formData.coverImages.filter((x) => x !== filePath)
+  }
+  formData.cover = Array.isArray(formData.coverImages) ? (formData.coverImages[0] || '') : ''
   return true
 }
 
@@ -313,15 +325,23 @@ const fetchArticleInfo = async (id) => {
     if (res.data) {
       Object.assign(formData, res.data)
       fetchTypeList(formData.categoryId)
-      if (formData.cover) {
-        const url = await getCmsFilePreviewUrl(formData.cover)
-        coverFileList.value = [{
-          uid: '-1',
+      // 回显封面：优先 coverImages，其次 cover
+      const coversRaw = res.data.coverImages ?? (res.data.cover ? [res.data.cover] : [])
+      const covers = Array.isArray(coversRaw) ? coversRaw : []
+      formData.coverImages = covers
+        .map((x) => (x == null ? '' : String(x)).trim())
+        .filter(Boolean)
+      formData.cover = formData.coverImages[0] || ''
+
+      if (formData.coverImages.length) {
+        const urls = await Promise.all(formData.coverImages.map((obj) => getCmsFilePreviewUrl(obj)))
+        coverFileList.value = formData.coverImages.map((obj, i) => ({
+          uid: String(i + 1),
           name: 'cover',
           status: 'done',
-          url,
-          filePath: formData.cover
-        }]
+          url: urls[i],
+          filePath: obj
+        }))
       } else {
         coverFileList.value = []
       }
@@ -338,6 +358,11 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     loading.value = true
+
+    // 提交前保证 coverImages / cover 一致
+    if (!Array.isArray(formData.coverImages)) formData.coverImages = []
+    formData.coverImages = formData.coverImages.map((x) => (x == null ? '' : String(x)).trim()).filter(Boolean)
+    formData.cover = formData.coverImages[0] || ''
     
     if (formData.id) {
       await post('/cms/article/update', { data: formData })

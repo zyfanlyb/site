@@ -18,7 +18,7 @@ public interface CmsArticleMapper extends BaseMapper<CmsArticle> {
             "FROM cms_article a " +
             "LEFT JOIN cms_category c ON a.category_id = c.id " +
             "WHERE a.deleted = 0 " +
-            "ORDER BY a.sort ASC, a.create_time DESC")
+            "ORDER BY a.create_time DESC")
     List<CmsArticle> selectArticleListWithCategory();
 
     /**
@@ -28,7 +28,7 @@ public interface CmsArticleMapper extends BaseMapper<CmsArticle> {
             "FROM cms_article a " +
             "LEFT JOIN cms_category c ON a.category_id = c.id " +
             "WHERE a.deleted = 0 AND a.category_id = #{categoryId} " +
-            "ORDER BY a.sort ASC, a.create_time DESC")
+            "ORDER BY a.create_time DESC")
     List<CmsArticle> selectArticleListByCategoryId(@Param("categoryId") Long categoryId);
 
 }

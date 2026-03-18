@@ -1,5 +1,7 @@
 package com.zyfan.site_cms.cms.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.zyfan.site_cms.anno.NoAuth;
 import com.zyfan.site_cms.anno.Permission;
 import com.zyfan.site_cms.cms.entity.CmsArticle;
 import com.zyfan.site_cms.cms.service.ICmsArticleService;
@@ -20,15 +22,11 @@ public class CmsArticleController {
     @Autowired
     private ICmsArticleService cmsArticleService;
 
+    @NoAuth
     @Permission("cms:article:page")
     @PostMapping("/page")
     public ResponseVo<List<CmsArticle>> page(@RequestBody RequestVo<CmsArticle> requestVo) {
         return ResponseVo.success(cmsArticleService.pageList(requestVo));
-    }
-
-    @PostMapping("/list")
-    public ResponseVo<List<CmsArticle>> list(@RequestBody RequestVo<CmsArticle> requestVo) {
-        return ResponseVo.success(cmsArticleService.list(requestVo));
     }
 
     @Permission("cms:article:add")
@@ -45,6 +43,7 @@ public class CmsArticleController {
         return ResponseVo.success();
     }
 
+    @NoAuth
     @Permission("cms:article:view")
     @PostMapping("/info/{id}")
     public ResponseVo<CmsArticle> info(@PathVariable("id") Long id) {

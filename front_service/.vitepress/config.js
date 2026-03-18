@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: '网站文档',
+  title: 'zyfan',
   description: '基于VitePress的网站前端',
   
   // 主题配置
@@ -12,9 +12,8 @@ export default defineConfig({
     // 导航栏
     nav: [
       { text: '首页', link: '/' },
-      { text: '指南', link: '/guide/' },
-      { text: '关于', link: '/about/' },
-      { text: '动态文章', link: '/dynamic/articles' }
+      { text: '博客', link: '/dynamic/blogs' },
+      { text: '项目经历', link: '/dynamic/projects' },
     ],
     
     // 侧边栏
@@ -62,7 +61,8 @@ export default defineConfig({
       proxy: {
         '/api': {
           target: 'http://localhost:11007',
-          changeOrigin: true
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
         }
       }
     }
