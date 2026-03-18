@@ -60,7 +60,15 @@
               @change="onMdFileChange"
             />
           </div>
-          <MdEditor v-model="formData.content" :preview="true" :language="'zh-CN'" class="md-editor-inner" />
+          <div ref="editorWrapRef">
+            <MdEditor
+              v-model="formData.content"
+              :preview="true"
+              :language="'zh-CN'"
+              class="md-editor-inner"
+              @onHtmlChanged="handleEditorHtmlChanged"
+            />
+          </div>
         </div>
       </a-form-item>
       <a-form-item label="封面图片" name="coverImages">
@@ -125,14 +133,17 @@
         />
       </div>
       <div class="fullscreen-editor-body">
-        <MdEditor
-          v-model="formData.content"
-          :preview="true"
-          :language="'zh-CN'"
-          :toolbars-exclude="['fullscreen', 'maximize']"
-          :page-fullscreen="false"
-          class="md-editor-fullscreen"
-        />
+        <div ref="fullscreenEditorWrapRef">
+          <MdEditor
+            v-model="formData.content"
+            :preview="true"
+            :language="'zh-CN'"
+            :toolbars-exclude="['fullscreen', 'maximize']"
+            :page-fullscreen="false"
+            class="md-editor-fullscreen"
+            @onHtmlChanged="handleFullscreenEditorHtmlChanged"
+          />
+        </div>
       </div>
       <div class="fullscreen-editor-footer">
         <span class="footer-tip">内容已自动同步</span>
@@ -143,12 +154,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { nextTick, ref, reactive, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { UploadOutlined, FullscreenOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { post } from '@/utils/request'
 import service from '@/utils/request'
 import { getCmsFilePreviewUrl } from '@/utils/file'
+import { hydrateCmsPreviewImages } from '@/utils/cmsPreviewImages'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
@@ -161,6 +173,8 @@ const mdFileInputRef = ref(null)
 const mdFileInputFullscreenRef = ref(null)
 const fullscreenEditorVisible = ref(false)
 const coverFileList = ref([])
+const editorWrapRef = ref(null)
+const fullscreenEditorWrapRef = ref(null)
 const fullscreenBodyStyle = {
   padding: 0,
   height: '80vh',
@@ -186,6 +200,24 @@ const formData = reactive({
 const rules = {
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }]
+}
+
+let editorHydrateTimer = null
+const handleEditorHtmlChanged = () => {
+  if (editorHydrateTimer) window.clearTimeout(editorHydrateTimer)
+  editorHydrateTimer = window.setTimeout(async () => {
+    await nextTick()
+    hydrateCmsPreviewImages(editorWrapRef.value)
+  }, 50)
+}
+
+let fullscreenHydrateTimer = null
+const handleFullscreenEditorHtmlChanged = () => {
+  if (fullscreenHydrateTimer) window.clearTimeout(fullscreenHydrateTimer)
+  fullscreenHydrateTimer = window.setTimeout(async () => {
+    await nextTick()
+    hydrateCmsPreviewImages(fullscreenEditorWrapRef.value)
+  }, 50)
 }
 
 const resetForm = () => {
@@ -312,6 +344,7 @@ const onMdFileChange = (e) => {
     if (typeof text === 'string') {
       formData.content = text
       message.success('已加载 Markdown 文件内容')
+      handleEditorHtmlChanged()
     }
   }
   reader.readAsText(file, 'UTF-8')
@@ -325,6 +358,7 @@ const fetchArticleInfo = async (id) => {
     if (res.data) {
       Object.assign(formData, res.data)
       fetchTypeList(formData.categoryId)
+      handleEditorHtmlChanged()
       // 回显封面：优先 coverImages，其次 cover
       const coversRaw = res.data.coverImages ?? (res.data.cover ? [res.data.cover] : [])
       const covers = Array.isArray(coversRaw) ? coversRaw : []

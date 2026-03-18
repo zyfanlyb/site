@@ -41,6 +41,7 @@ public class ArticleServiceImpl implements ArticleService {
     public ResponseVo<List<CmsArticleVo>> getArticles(Long categoryId,
                                                            String categoryName,
                                                            Long typeId,
+                                                           String keyword,
                                                            Integer pageNum,
                                                            Integer pageSize) {
         RequestVo<CmsArticleVo> requestVo = new RequestVo<>();
@@ -49,6 +50,9 @@ public class ArticleServiceImpl implements ArticleService {
 
         CmsArticleVo params = new CmsArticleVo();
         params.setStatus(1); // 只查询已发布的
+        if (keyword != null && !keyword.isBlank()) {
+            params.setKeyword(keyword.trim());
+        }
 
         // 优先按 ID，其次按名称映射
         if (categoryId != null) {

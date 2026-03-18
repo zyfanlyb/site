@@ -1,0 +1,48 @@
+/* Top nav (desktop) */
+.VPNavBarMenu .VPNavBarMenuLink {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Active state: keep same metrics to avoid layout shift */
+.VPNavBarMenu .VPNavBarMenuLink.active,
+.VPNavBarMenu .VPNavBarMenuLink[aria-current='page'] {
+  font-weight: 500;
+}
+
+/* Mobile nav (hamburger screen) */
+.VPNavScreenMenu .VPNavScreenMenuLink {
+  font-size: 18px;
+}
+
+/* Prevent layout shift when scrollbar appears/disappears */
+html {
+  overflow-y: scroll;
+}
+
+/* Hide site title text: zyfan (keep logo) */
+@media (min-width: 960px) {
+  .VPNavBarTitle .title span {
+    display: none !important;
+  }
+}
+
+@media (max-width: 959px) {
+  .VPNavBarTitle .title span {
+    display: none !important;
+  }
+}
+
+/* SEO-only: 对搜索引擎可见、页面不显示（避免影响观感） */
+.seo-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

@@ -11,6 +11,7 @@ public interface ArticleService {
     ResponseVo<List<CmsArticleVo>> getArticles(Long categoryId,
                                                     String categoryName,
                                                     Long typeId,
+                                                    String keyword,
                                                     Integer pageNum,
                                                     Integer pageSize);
 

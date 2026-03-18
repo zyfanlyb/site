@@ -1,9 +1,17 @@
 <script setup>
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
+const props = defineProps({
+  // CMS 分类名：博客/项目经历等
+  categoryName: { type: String, default: '博客' },
+  // 搜索框占位
+  searchPlaceholder: { type: String, default: '搜索文章（标题/摘要/内容）' }
+})
+
 const loading = ref(false)
 const error = ref('')
 const articles = ref([])
+const keyword = ref('')
 const pageNum = ref(1)
 const pageSize = 10
 const hasMore = ref(true)
@@ -11,6 +19,28 @@ const isFetchingMore = ref(false)
 const loadMoreEl = ref(null)
 const listEl = ref(null)
 let io = null
+
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escapeHtml = (s) =>
+  String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+
+const highlightText = (text) => {
+  const raw = text ?? ''
+  const safe = escapeHtml(raw)
+  const kw = (keyword.value || '').trim()
+  if (!kw) return safe
+  try {
+    const re = new RegExp(escapeRegExp(kw), 'gi')
+    return safe.replace(re, (m) => `<mark class="hl">${m}</mark>`)
+  } catch {
+    return safe
+  }
+}
 
 const safeArticles = computed(() => (Array.isArray(articles.value) ? articles.value : []).filter(Boolean))
 const showLoading = computed(() => loading.value)
@@ -131,13 +161,24 @@ const readListFromResponse = (json) => {
   return Array.isArray(list) ? list.filter(Boolean) : []
 }
 
+const buildListUrl = (page) => {
+  const q = new URLSearchParams()
+  const category = (props.categoryName && props.categoryName.trim()) ? props.categoryName.trim() : '博客'
+  q.set('categoryName', category)
+  q.set('pageNum', String(page))
+  q.set('pageSize', String(pageSize))
+  const kw = (keyword.value || '').trim()
+  if (kw) q.set('keyword', kw)
+  return `/api/blogs/articles?${q.toString()}`
+}
+
 const fetchFirstPage = async () => {
   loading.value = true
   error.value = ''
   pageNum.value = 1
   hasMore.value = true
   try {
-    const res = await fetch(`/api/blogs/articles?categoryName=博客&pageNum=${pageNum.value}&pageSize=${pageSize}`)
+    const res = await fetch(buildListUrl(pageNum.value))
     const json = await res.json()
     if (json.code !== 200) throw new Error(json.message || '接口返回错误')
     const list = readListFromResponse(json)
@@ -162,7 +203,7 @@ const fetchNextPage = async () => {
   isFetchingMore.value = true
   error.value = ''
   try {
-    const res = await fetch(`/api/blogs/articles?categoryName=博客&pageNum=${pageNum.value}&pageSize=${pageSize}`)
+    const res = await fetch(buildListUrl(pageNum.value))
     const json = await res.json()
     if (json.code !== 200) throw new Error(json.message || '接口返回错误')
     const list = readListFromResponse(json)
@@ -182,6 +223,20 @@ const fetchNextPage = async () => {
   } finally {
     isFetchingMore.value = false
   }
+}
+
+const doSearch = async () => {
+  if (loading.value) return
+  // 虚拟列表在滚动到中间/底部时，如果筛选后结果变少，可能出现“空白”
+  // 这里主动回到顶部并重置虚拟窗口，保证筛选体验稳定
+  startIndex.value = 0
+  endIndex.value = 0
+  try {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  } catch {
+    window.scrollTo(0, 0)
+  }
+  await fetchFirstPage()
 }
 
 const keyOf = (article, idx) => String(article?.id ?? idx)
@@ -269,7 +324,34 @@ onBeforeUnmount(() => {
   <div class="page-wrap">
     <section class="hero">
       <div class="hero-main">
-        <div v-if="safeArticles.length" class="hero-stats">共 {{ safeArticles.length }} 篇</div>
+        <div class="hero-top">
+          <div class="hero-stats">共 {{ safeArticles.length }} 篇</div>
+        </div>
+        <div class="search-row">
+          <div class="search-box">
+            <input
+              v-model="keyword"
+              class="search-input"
+              type="search"
+              :placeholder="props.searchPlaceholder"
+              @keydown.enter.prevent="doSearch"
+            />
+            <button class="search-btn" type="button" @click="doSearch">搜索</button>
+            <button
+              v-if="keyword.trim()"
+              class="search-btn search-btn-ghost"
+              type="button"
+              @click="
+                () => {
+                  keyword = ''
+                  doSearch()
+                }
+              "
+            >
+              清空
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -293,13 +375,11 @@ onBeforeUnmount(() => {
 
     <div v-else-if="showError" class="state state-error">
       <div class="state-title">加载失败</div>
-      <div class="state-desc">{{ error }}</div>
-      <button class="btn" type="button" @click="fetchFirstPage">重试</button>
     </div>
 
     <div v-else-if="showContent">
       <div v-if="!safeArticles.length" class="state state-empty">
-        <div class="state-title">还没有文章</div>
+        <div class="empty-title">还没有文章</div>
       </div>
 
       <ul v-if="safeArticles.length" ref="listEl" class="blog-list" role="list">
@@ -312,44 +392,48 @@ onBeforeUnmount(() => {
           :ref="setCardRef(startIndex + localIdx)"
         >
           <div class="card-head">
-            <h2 class="card-title">{{ article?.title || '未命名文章' }}</h2>
+            <h2 class="card-title" v-html="highlightText(article?.title || '未命名文章')"></h2>
           </div>
 
           <div v-if="coverThumbs(article).length === 1" class="one-cover">
             <div class="one-cover-img">
               <img :src="toImgUrl(coverThumbs(article)[0])" alt="封面" loading="lazy" decoding="async" />
             </div>
-            <p class="one-cover-summary">{{ article?.summary || '无摘要' }}</p>
+            <p class="one-cover-summary" v-html="highlightText(article?.summary || '无摘要')"></p>
           </div>
 
           <div v-else class="multi-cover">
-            <p class="card-summary">{{ article?.summary || '无摘要' }}</p>
+            <p class="card-summary" v-html="highlightText(article?.summary || '无摘要')"></p>
             <div v-if="coverThumbs(article).length" class="gallery-wrap">
               <button
-                v-if="scrollable[keyOf(article, idx)]"
+                v-if="scrollable[keyOf(article, startIndex + localIdx)]"
                 class="gallery-btn gallery-btn-left"
                 type="button"
-                :disabled="!canLeft[keyOf(article, idx)]"
-                @click="scrollGallery(keyOf(article, idx), -1)"
+                :disabled="!canLeft[keyOf(article, startIndex + localIdx)]"
+                @click="scrollGallery(keyOf(article, startIndex + localIdx), -1)"
                 v-text="'‹'"
               ></button>
 
               <div
                 class="card-covers card-covers-scroll"
-                :ref="setGalleryRef(keyOf(article, idx))"
-                @scroll.passive="scheduleUpdateGalleryState(keyOf(article, idx))"
+                :ref="setGalleryRef(keyOf(article, startIndex + localIdx))"
+                @scroll.passive="scheduleUpdateGalleryState(keyOf(article, startIndex + localIdx))"
               >
-                <div v-for="(img, i) in coverThumbs(article)" :key="keyOf(article, idx) + '-img-' + i" class="cover-thumb">
+                <div
+                  v-for="(img, i) in coverThumbs(article)"
+                  :key="keyOf(article, startIndex + localIdx) + '-img-' + i"
+                  class="cover-thumb"
+                >
                   <img class="cover-thumb-img" :src="toImgUrl(img)" alt="封面" loading="lazy" decoding="async" />
                 </div>
               </div>
 
               <button
-                v-if="scrollable[keyOf(article, idx)]"
+                v-if="scrollable[keyOf(article, startIndex + localIdx)]"
                 class="gallery-btn gallery-btn-right"
                 type="button"
-                :disabled="!canRight[keyOf(article, idx)]"
-                @click="scrollGallery(keyOf(article, idx), 1)"
+                :disabled="!canRight[keyOf(article, startIndex + localIdx)]"
+                @click="scrollGallery(keyOf(article, startIndex + localIdx), 1)"
                 v-text="'›'"
               ></button>
             </div>
@@ -376,14 +460,44 @@ onBeforeUnmount(() => {
 <style scoped>
 .page-wrap { max-width: none; margin: 0 auto; padding: 24px 0 52px; display: flex; flex-direction: column; align-items: center; }
 .hero { margin: 10px 0 18px; width: 70vw; }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .hero-stats { margin-top: 10px; font-size: 12px; color: var(--vp-c-text-2); }
+.search-row { margin-top: 10px; display: flex; align-items: center; justify-content: flex-start; }
+.search-box { width: 100%; max-width: 520px; display: flex; gap: 8px; align-items: center; }
+.search-input {
+  flex: 1;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  outline: none;
+}
+.search-input:focus { border-color: color-mix(in srgb, var(--vp-c-brand-1) 55%, var(--vp-c-divider)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vp-c-brand-1) 20%, transparent); }
+.search-btn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+.search-btn:hover { background: color-mix(in srgb, var(--vp-c-bg-soft) 70%, var(--vp-c-bg)); }
+.search-btn-ghost { background: transparent; }
+.hl { background: #ffeb3b; color: inherit; padding: 0 2px; border-radius: 3px; }
 .state { padding: 22px 0; font-size: 14px; width: 70vw; }
 .state-title { font-size: 16px; font-weight: 700; color: var(--vp-c-text-1); margin-bottom: 6px; }
 .state-desc { color: var(--vp-c-text-2); line-height: 1.7; }
-.state-error { border: 1px solid color-mix(in srgb, var(--vp-c-danger-1) 35%, transparent); background: color-mix(in srgb, var(--vp-c-danger-soft) 70%, transparent); border-radius: 14px; padding: 14px 14px; }
-.state-empty { border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); border-radius: 14px; padding: 14px 14px; }
+.state-error { padding: 10px 0 0; }
+.state-error .state-title { color: var(--vp-c-text-2); }
+.state-empty { padding: 10px 0 0; }
+.empty-title { font-size: 14px; font-weight: 600; color: var(--vp-c-text-2); }
 .blog-list { list-style: none; padding: 0; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 12px; width: 70vw; }
-.blog-card { border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); border-radius: 16px; padding: 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+/* 去掉卡片感：无独立背景/边框/圆角，改为列表分隔线 */
+.blog-card { border: 0; background: transparent; border-radius: 0; padding: 8px 0; display: flex; flex-direction: column; gap: 10px; }
 .spacer { border: 0; background: transparent; padding: 0; margin: 0; }
 .card-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--vp-c-divider); }
 .card-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--vp-c-brand-1); line-height: 1.35; letter-spacing: -0.01em; border-top: 0 !important; padding-top: 0 !important; flex: 1; min-width: 0; }
@@ -416,6 +530,8 @@ onBeforeUnmount(() => {
 @media (max-width: 640px) {
   .blog-list, .hero, .state, .load-more { width: 100%; margin: 0; }
   .page-wrap { padding: 16px 0 40px; align-items: stretch; }
+  .search-box { max-width: none; flex-wrap: wrap; }
+  .search-input { width: 100%; flex: 1 1 100%; }
   .one-cover { grid-template-columns: 120px 1fr; }
   .one-cover-img { width: 120px; height: 72px; }
   .card-summary, .one-cover-summary { -webkit-line-clamp: 2; line-clamp: 2; min-height: calc(1.6em * 2); }

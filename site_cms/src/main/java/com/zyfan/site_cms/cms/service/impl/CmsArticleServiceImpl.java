@@ -52,8 +52,15 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
         LambdaQueryWrapper<CmsArticle> wrapper = Wrappers.lambdaQuery(CmsArticle.class);
 
         if (params != null) {
-            if (params.getTitle() != null && !params.getTitle().isEmpty()) {
-                wrapper.like(CmsArticle::getTitle, params.getTitle());
+            if (params.getKeyword() != null && !params.getKeyword().isEmpty()) {
+                String kw = params.getKeyword().trim();
+                if (!kw.isEmpty()) {
+                    wrapper.and(w -> w
+                            .like(CmsArticle::getTitle, kw)
+                            .or()
+                            .like(CmsArticle::getSummary, kw)
+                    );
+                }
             }
             if (params.getCategoryId() != null) {
                 wrapper.eq(CmsArticle::getCategoryId, params.getCategoryId());
@@ -65,6 +72,19 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
                 wrapper.eq(CmsArticle::getStatus, params.getStatus());
             }
         }
+
+        // 列表分页不读取大字段：减少 DB -> 应用 IO（summary/content）
+        wrapper.select(
+                CmsArticle::getId,
+                CmsArticle::getTitle,
+                CmsArticle::getCategoryId,
+                CmsArticle::getTypeId,
+                CmsArticle::getSummary,
+                CmsArticle::getStatus,
+                CmsArticle::getSort,
+                CmsArticle::getCreateTime,
+                CmsArticle::getUpdateTime
+        );
 
         wrapper.orderByDesc(CmsArticle::getSort)
                 .orderByDesc(CmsArticle::getCreateTime);
@@ -86,8 +106,17 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
         LambdaQueryWrapper<CmsArticle> wrapper = Wrappers.lambdaQuery(CmsArticle.class);
 
         if (params != null) {
-            if (params.getTitle() != null && !params.getTitle().isEmpty()) {
-                wrapper.like(CmsArticle::getTitle, params.getTitle());
+            if (params.getKeyword() != null && !params.getKeyword().isEmpty()) {
+                String kw = params.getKeyword().trim();
+                if (!kw.isEmpty()) {
+                    wrapper.and(w -> w
+                            .like(CmsArticle::getTitle, kw)
+                            .or()
+                            .like(CmsArticle::getSummary, kw)
+                            .or()
+                            .like(CmsArticle::getContent, kw)
+                    );
+                }
             }
             if (params.getCategoryId() != null) {
                 wrapper.eq(CmsArticle::getCategoryId, params.getCategoryId());
@@ -99,6 +128,19 @@ public class CmsArticleServiceImpl extends ServiceImpl<CmsArticleMapper, CmsArti
                 wrapper.eq(CmsArticle::getStatus, params.getStatus());
             }
         }
+
+        // 列表查询不读取大字段：减少 DB -> 应用 IO（summary/content）
+        wrapper.select(
+                CmsArticle::getId,
+                CmsArticle::getTitle,
+                CmsArticle::getCategoryId,
+                CmsArticle::getTypeId,
+                CmsArticle::getSummary,
+                CmsArticle::getStatus,
+                CmsArticle::getSort,
+                CmsArticle::getCreateTime,
+                CmsArticle::getUpdateTime
+        );
 
         wrapper.orderByDesc(CmsArticle::getSort)
                 .orderByDesc(CmsArticle::getCreateTime);

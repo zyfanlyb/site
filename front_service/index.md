@@ -24,3 +24,7 @@ features:
     title: 开箱即用
     details: 内置常用功能，无需复杂配置即可使用
 ---
+
+<p class="seo-only">
+  zyfan · 全栈工程师：分享技术实践、项目经验与持续迭代的学习笔记。
+</p>

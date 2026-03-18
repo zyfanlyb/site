@@ -50,6 +50,12 @@ public class CmsArticle {
     private String content;
 
     /**
+     * 关键词（非数据库字段）：用于列表筛选（title/summary/content 模糊匹配）
+     */
+    @TableField(exist = false)
+    private String keyword;
+
+    /**
      * 多封面（一对多：cms_article_cover），非数据库字段
      */
     @TableField(exist = false)

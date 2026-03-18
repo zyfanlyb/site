@@ -27,6 +27,11 @@ public class CmsArticleVo {
     private String content;
 
     /**
+     * 关键词：用于列表筛选（title/summary/content 模糊匹配）
+     */
+    private String keyword;
+
+    /**
      * 多封面：CMS 存储/返回的封面 key 数组
      */
     private List<String> coverImages;

@@ -15,8 +15,8 @@
     />
     <div class="search-container">
       <a-form layout="inline" :model="searchForm">
-        <a-form-item label="标题">
-          <a-input v-model:value="searchForm.title" placeholder="请输入文章标题" style="width: 200px" />
+        <a-form-item label="关键词">
+          <a-input v-model:value="searchForm.keyword" placeholder="模糊搜索标题/摘要/内容" style="width: 220px" />
         </a-form-item>
         <a-form-item label="状态">
           <a-select v-model:value="searchForm.status" style="width: 120px" allowClear>
@@ -113,7 +113,7 @@ const typeConfigRef = ref(null)
 const loading = ref(false)
 const dataSource = ref([])
 const searchForm = reactive({
-  title: '',
+  keyword: '',
   status: undefined
 })
 
@@ -144,7 +144,7 @@ const fetchData = async () => {
       pageNum: pagination.current,
       pageSize: pagination.pageSize,
       data: {
-        title: searchForm.title || undefined,
+        keyword: searchForm.keyword || undefined,
         status: searchForm.status !== undefined ? Number(searchForm.status) : undefined
       }
     })
@@ -174,7 +174,7 @@ const handleTableChange = (page, pageSize) => {
 }
 
 const resetSearch = () => {
-  searchForm.title = ''
+  searchForm.keyword = ''
   searchForm.status = undefined
   resetPagination(pagination)
   fetchData()

@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitepress'
 
+const siteUrl = 'https://www.zyfan.top'
+
 export default defineConfig({
   title: 'zyfan',
-  description: '基于VitePress的网站前端',
+  description: 'zyfan的个人小站',
   
   // 主题配置
   themeConfig: {
@@ -28,22 +30,13 @@ export default defineConfig({
         }
       ]
     },
-    
-    // 社交链接
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com' }
-    ],
+
     
     // 页脚
     footer: {
-      message: '基于 VitePress 构建',
-      copyright: 'Copyright © 2024'
+      message: 'zyfan · 全栈工程师 · <a href="mailto:2938668548@qq.com">2938668548@qq.com</a>',
+      copyright: '© 2026 版权与声明：本站内容仅代表个人观点，转载/引用请注明出处，如有侵权请邮件联系删除。'
     },
-    
-    // 搜索
-    search: {
-      provider: 'local'
-    }
   },
   
   // 基础路径
@@ -53,7 +46,33 @@ export default defineConfig({
   lang: 'zh-CN',
   
   // 最后更新时间
-  lastUpdated: true,
+  lastUpdated: false,
+
+  // Sitemap：帮助搜索引擎更快发现页面
+  sitemap: {
+    hostname: siteUrl
+  },
+
+  // 基础 SEO：canonical / OG / 结构化数据
+  head: [
+    ['link', { rel: 'canonical', href: `${siteUrl}/` }],
+    ['meta', { property: 'og:title', content: 'zyfan' }],
+    ['meta', { property: 'og:description', content: 'zyfan的个人小站' }],
+    ['meta', { property: 'og:url', content: `${siteUrl}/` }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: 'zyfan',
+        url: `${siteUrl}/`,
+        email: '2938668548@qq.com',
+        jobTitle: '全栈工程师'
+      })
+    ]
+  ],
   
   // 开发环境 API 代理到 site_service
   vite: {

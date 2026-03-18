@@ -24,9 +24,10 @@ public class ArticleController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String categoryName,
             @RequestParam(required = false) Long typeId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "1") Integer pageNum,
             @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
-        return articleService.getArticles(categoryId, categoryName, typeId, pageNum, pageSize);
+        return articleService.getArticles(categoryId, categoryName, typeId, keyword, pageNum, pageSize);
     }
 
     /**

@@ -23,7 +23,14 @@
           <a-textarea :value="detail.summary || '-'" :rows="3" disabled />
         </a-form-item>
         <a-form-item label="内容">
-          <a-textarea :value="detail.content || '-'" :rows="10" disabled class="detail-content" />
+          <div ref="contentPreviewWrapRef" class="detail-content">
+            <MdPreview
+              :modelValue="detail.content || ''"
+              :language="'zh-CN'"
+              @onHtmlChanged="handleContentHtmlChanged"
+            />
+            <div v-if="!detail.content" class="detail-empty">-</div>
+          </div>
         </a-form-item>
         <a-form-item label="封面图片">
           <template v-if="coverPreviewUrls.length">
@@ -64,15 +71,29 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { post } from '@/utils/request'
 import { getCmsFilePreviewUrl } from '@/utils/file'
+import { hydrateCmsPreviewImages } from '@/utils/cmsPreviewImages'
+import { MdPreview } from 'md-editor-v3'
+import 'md-editor-v3/lib/style.css'
 
 const visible = ref(false)
 const loading = ref(false)
 const detail = ref(null)
 const coverPreviewUrls = ref([])
+const contentPreviewWrapRef = ref(null)
+
+let contentHydrateTimer = null
+const handleContentHtmlChanged = () => {
+  // 预览 HTML 更新后，异步把图片 src 替换成 blob URL
+  if (contentHydrateTimer) window.clearTimeout(contentHydrateTimer)
+  contentHydrateTimer = window.setTimeout(async () => {
+    await nextTick()
+    hydrateCmsPreviewImages(contentPreviewWrapRef.value)
+  }, 50)
+}
 
 const fetchDetail = async (id) => {
   try {
@@ -82,6 +103,7 @@ const fetchDetail = async (id) => {
     const res = await post(`/cms/article/info/${id}`)
     if (res.data) {
       detail.value = res.data
+      handleContentHtmlChanged()
       const coversRaw = res.data.coverImages ?? (res.data.cover ? [res.data.cover] : [])
       const covers = Array.isArray(coversRaw) ? coversRaw : []
       const objectNames = covers
@@ -110,6 +132,7 @@ const open = (id) => {
 watch(visible, (val) => {
   if (!val) {
     detail.value = null
+    coverPreviewUrls.value = []
   }
 })
 
@@ -121,14 +144,16 @@ defineExpose({
 <style scoped>
 .detail-content {
   min-height: 200px;
-  max-height: 300px;
+  max-height: 420px;
   overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
   padding: 8px 11px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  background: #fafafa;
+  background: #fff;
+}
+.detail-empty {
+  color: rgba(0, 0, 0, 0.45);
+  padding: 8px 0;
 }
 .cover-preview {
   display: flex;
