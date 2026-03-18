@@ -12,6 +12,7 @@ services:
       # Spring Profile
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
+    network_mode: bridge
   cms:
     build:
       context: .
@@ -25,5 +26,6 @@ services:
       # Spring Profile
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
+    network_mode: bridge
 
 

@@ -156,7 +156,11 @@ const router = createRouter({
         {
             path: '/site',
             name: 'site',
-            redirect: '/site/index',
+            redirect: (to) => ({
+                path: '/site/index',
+                query: to.query,
+                hash: to.hash
+            }),
             component: () => import('@/views/Home.vue'),
             meta: {requiresAuth: true},
             children: [
@@ -251,7 +255,8 @@ router.beforeEach(async (to, from, next) => {
                     // 移除URL中的uuid参数，重新导航
                     const newQuery = { ...to.query };
                     delete newQuery.uuid;
-                    next({ ...to, query: newQuery, replace: true });
+                    // 兼容后端重定向到 /site/（尾斜杠）导致的路由不匹配风险
+                    next({ path: '/site/index', query: newQuery, replace: true });
                     return;
                 } catch (initError) {
                     console.error('初始化失败:', initError);
