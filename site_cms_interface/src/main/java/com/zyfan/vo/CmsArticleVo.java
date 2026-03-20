@@ -2,6 +2,8 @@ package com.zyfan.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.util.Date;
@@ -14,13 +16,18 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CmsArticleVo {
 
+    /** 序列化为字符串，避免前端 JS 大整数精度丢失导致详情 id 对不上 ES */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     private String title;
 
     private Long categoryId;
 
-    private Long typeId;
+    /**
+     * 类型ID列表（多选）
+     */
+    private List<Long> typeIds;
 
     private String summary;
 
@@ -56,5 +63,15 @@ public class CmsArticleVo {
      * 类型名称
      */
     private String typeName;
+
+    /**
+     * 类型名称列表
+     */
+    private List<String> typeNames;
+
+    /**
+     * Elasticsearch 检索得分（仅有关键词检索时由后端返回，前端可不展示）
+     */
+    private Double searchScore;
 }
 

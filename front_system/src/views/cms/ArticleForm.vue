@@ -28,8 +28,14 @@
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="类型" name="typeId">
-        <a-select v-model:value="formData.typeId" placeholder="请先选择分类" allowClear :disabled="!formData.categoryId">
+      <a-form-item label="类型" name="typeIds">
+        <a-select
+          v-model:value="formData.typeIds"
+          mode="multiple"
+          placeholder="请先选择分类"
+          allowClear
+          :disabled="!formData.categoryId"
+        >
           <a-select-option v-for="item in typeList" :key="item.id" :value="item.id">
             {{ item.name }}
           </a-select-option>
@@ -189,7 +195,7 @@ const formData = reactive({
   id: null,
   title: '',
   categoryId: null,
-  typeId: null,
+  typeIds: [],
   summary: '',
   content: '',
   cover: '',
@@ -224,7 +230,7 @@ const resetForm = () => {
   formData.id = null
   formData.title = ''
   formData.categoryId = null
-  formData.typeId = null
+  formData.typeIds = []
   formData.summary = ''
   formData.content = ''
   formData.cover = ''
@@ -319,7 +325,7 @@ const fetchTypeList = async (categoryId) => {
 }
 
 const onCategoryChange = () => {
-  formData.typeId = null
+  formData.typeIds = []
   fetchTypeList(formData.categoryId)
 }
 
@@ -359,6 +365,7 @@ const fetchArticleInfo = async (id) => {
       Object.assign(formData, res.data)
       fetchTypeList(formData.categoryId)
       handleEditorHtmlChanged()
+      if (!Array.isArray(formData.typeIds)) formData.typeIds = []
       // 回显封面：优先 coverImages，其次 cover
       const coversRaw = res.data.coverImages ?? (res.data.cover ? [res.data.cover] : [])
       const covers = Array.isArray(coversRaw) ? coversRaw : []
@@ -397,6 +404,8 @@ const handleSubmit = async () => {
     if (!Array.isArray(formData.coverImages)) formData.coverImages = []
     formData.coverImages = formData.coverImages.map((x) => (x == null ? '' : String(x)).trim()).filter(Boolean)
     formData.cover = formData.coverImages[0] || ''
+    // 类型：保证为数组
+    if (!Array.isArray(formData.typeIds)) formData.typeIds = []
     
     if (formData.id) {
       await post('/cms/article/update', { data: formData })

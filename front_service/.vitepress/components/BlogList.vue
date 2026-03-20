@@ -12,6 +12,9 @@ const loading = ref(false)
 const error = ref('')
 const articles = ref([])
 const keyword = ref('')
+const categoryId = ref(null)
+const types = ref([])
+const selectedTypeIds = ref([])
 const pageNum = ref(1)
 const pageSize = 10
 const hasMore = ref(true)
@@ -92,6 +95,60 @@ const formatDate = (val) => {
   }
 }
 
+/** 列表底部类型标签：优先 typeNames，其次 typeName（顿号/逗号分隔） */
+const articleTypeLabels = (article) => {
+  if (!article) return []
+  const arr = article.typeNames
+  if (Array.isArray(arr) && arr.length) {
+    return arr.map((x) => (x == null ? '' : String(x).trim())).filter(Boolean)
+  }
+  const tn = article.typeName
+  if (tn == null || tn === '') return []
+  return String(tn)
+    .split(/[、,，]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * 类型标签带 id（用于与筛选条件高亮对应）；无 id 时仅名称与 types 比对
+ */
+const articleTypeTagItems = (article) => {
+  if (!article) return []
+  const ids = article.typeIds
+  const names = article.typeNames
+  if (Array.isArray(ids) && Array.isArray(names) && ids.length && names.length) {
+    const n = Math.min(ids.length, names.length)
+    const out = []
+    for (let i = 0; i < n; i++) {
+      const label = String(names[i] ?? '').trim()
+      if (!label) continue
+      const rawId = ids[i]
+      const id = rawId == null || rawId === '' ? null : Number(rawId)
+      out.push({ id: id != null && !Number.isNaN(id) ? id : null, label })
+    }
+    if (out.length) return out
+  }
+  return articleTypeLabels(article).map((label) => ({ id: null, label }))
+}
+
+/** 当前筛选中的类型是否与该标签匹配（用于黄色回显，与关键词 .hl 同色） */
+const isTypeTagFilterHighlight = (item) => {
+  const sel = selectedTypeIds.value
+  if (!Array.isArray(sel) || !sel.length) return false
+  const selNum = sel.map((x) => Number(x)).filter((x) => !Number.isNaN(x))
+  if (item.id != null && !Number.isNaN(item.id)) {
+    return selNum.includes(Number(item.id))
+  }
+  const label = item.label
+  if (!label) return false
+  for (const sid of selNum) {
+    const t = types.value.find((x) => Number(x.id) === sid)
+    if (t && String(t.name).trim() === label) return true
+  }
+  return false
+}
+
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n))
 
 const updateVirtualRange = () => {
@@ -161,6 +218,42 @@ const readListFromResponse = (json) => {
   return Array.isArray(list) ? list.filter(Boolean) : []
 }
 
+const readTypesFromResponse = (json) => {
+  const list = json?.data
+  return Array.isArray(list) ? list.filter(Boolean) : []
+}
+
+const resolveCategoryId = async () => {
+  const category = (props.categoryName && props.categoryName.trim()) ? props.categoryName.trim() : '博客'
+  try {
+    const res = await fetch('/api/blogs/categories')
+    const json = await res.json()
+    if (json.code !== 200) return
+    const list = Array.isArray(json.data) ? json.data : []
+    const match = list.find((x) => x && x.name === category)
+    categoryId.value = match?.id ?? null
+  } catch {
+    // ignore
+  }
+}
+
+const fetchTypes = async () => {
+  if (!categoryId.value) {
+    types.value = []
+    return
+  }
+  try {
+    const q = new URLSearchParams()
+    q.set('categoryId', String(categoryId.value))
+    const res = await fetch(`/api/blogs/types?${q.toString()}`)
+    const json = await res.json()
+    if (json.code !== 200) return
+    types.value = readTypesFromResponse(json)
+  } catch {
+    types.value = []
+  }
+}
+
 const buildListUrl = (page) => {
   const q = new URLSearchParams()
   const category = (props.categoryName && props.categoryName.trim()) ? props.categoryName.trim() : '博客'
@@ -169,6 +262,9 @@ const buildListUrl = (page) => {
   q.set('pageSize', String(pageSize))
   const kw = (keyword.value || '').trim()
   if (kw) q.set('keyword', kw)
+  if (Array.isArray(selectedTypeIds.value) && selectedTypeIds.value.length) {
+    q.set('typeIds', selectedTypeIds.value.join(','))
+  }
   return `/api/blogs/articles?${q.toString()}`
 }
 
@@ -239,6 +335,21 @@ const doSearch = async () => {
   await fetchFirstPage()
 }
 
+const toggleType = (id) => {
+  if (!id) return
+  const cur = Array.isArray(selectedTypeIds.value) ? [...selectedTypeIds.value] : []
+  const idx = cur.indexOf(id)
+  if (idx > -1) cur.splice(idx, 1)
+  else cur.push(id)
+  selectedTypeIds.value = cur
+  doSearch()
+}
+
+const clearTypes = () => {
+  selectedTypeIds.value = []
+  doSearch()
+}
+
 const keyOf = (article, idx) => String(article?.id ?? idx)
 const galleryEls = new Map()
 const scrollable = reactive({})
@@ -289,6 +400,8 @@ const onResize = () => {
 }
 
 onMounted(async () => {
+  await resolveCategoryId()
+  await fetchTypes()
   await fetchFirstPage()
   nextTick(onResize)
   window.addEventListener('resize', onResize)
@@ -349,6 +462,29 @@ onBeforeUnmount(() => {
               "
             >
               清空
+            </button>
+          </div>
+        </div>
+
+        <div v-if="types.length" class="filter-row">
+          <div class="chip-row" role="list">
+            <button
+              class="chip"
+              :class="{ active: !selectedTypeIds.length }"
+              type="button"
+              @click="clearTypes"
+            >
+              全部
+            </button>
+            <button
+              v-for="t in types"
+              :key="String(t.id)"
+              class="chip"
+              :class="{ active: selectedTypeIds.includes(t.id) }"
+              type="button"
+              @click="toggleType(t.id)"
+            >
+              {{ t.name }}
             </button>
           </div>
         </div>
@@ -440,7 +576,14 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="card-meta">
-            <span v-if="article?.typeName" class="tag tag-type">{{ article.typeName }}</span>
+            <div v-if="articleTypeTagItems(article).length" class="type-tags">
+              <span
+                v-for="(item, ti) in articleTypeTagItems(article)"
+                :key="keyOf(article, startIndex + localIdx) + '-type-' + ti"
+                class="tag tag-type"
+                :class="{ 'tag-type-filter-hl': isTypeTagFilterHighlight(item) }"
+              >{{ item.label }}</span>
+            </div>
             <time v-if="article?.createTime" class="card-date">{{ formatDate(article.createTime) }}</time>
           </div>
         </li>
@@ -464,6 +607,26 @@ onBeforeUnmount(() => {
 .hero-stats { margin-top: 10px; font-size: 12px; color: var(--vp-c-text-2); }
 .search-row { margin-top: 10px; display: flex; align-items: center; justify-content: flex-start; }
 .search-box { width: 100%; max-width: 520px; display: flex; gap: 8px; align-items: center; }
+.filter-row { margin-top: 12px; display: grid; gap: 10px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.chip:hover { background: var(--vp-c-bg-soft); }
+.chip.active {
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) 55%, var(--vp-c-divider));
+  background: color-mix(in srgb, var(--vp-c-brand-1) 10%, var(--vp-c-bg));
+  color: color-mix(in srgb, var(--vp-c-brand-1) 80%, var(--vp-c-text-1));
+}
 .search-input {
   flex: 1;
   height: 34px;
@@ -502,10 +665,22 @@ onBeforeUnmount(() => {
 .card-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--vp-c-divider); }
 .card-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--vp-c-brand-1); line-height: 1.35; letter-spacing: -0.01em; border-top: 0 !important; padding-top: 0 !important; flex: 1; min-width: 0; }
 .card-summary { margin: 0; font-size: 13px; color: var(--vp-c-text-2); line-height: 1.6; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; min-height: calc(1.6em * 3); }
-.card-meta { display: flex; justify-content: space-between; align-items: center; }
-.card-date { font-size: 12px; color: var(--vp-c-text-3); }
+.card-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px 12px;
+}
+.type-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.card-date { font-size: 12px; color: var(--vp-c-text-3); white-space: nowrap; padding-top: 2px; }
 .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 11px; line-height: 1.6; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); color: var(--vp-c-text-2); }
 .tag-type { border-color: color-mix(in srgb, var(--vp-c-brand-1) 40%, var(--vp-c-divider)); color: color-mix(in srgb, var(--vp-c-brand-1) 80%, var(--vp-c-text-1)); }
+/* 与正文关键词高亮 .hl 同色：筛选类型在文章中的回显 */
+.tag-type-filter-hl {
+  background: #ffeb3b;
+  color: var(--vp-c-text-1);
+  border-color: color-mix(in srgb, #ffeb3b 70%, var(--vp-c-divider));
+}
 .one-cover { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: start; }
 .one-cover-img { width: 160px; height: 96px; border-radius: 10px; overflow: hidden; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); }
 .one-cover-img img { width: 100%; height: 100%; object-fit: cover; display: block; }

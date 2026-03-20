@@ -4,8 +4,8 @@
   "description": "VitePress网站前端",
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev",
-    "build": "vitepress build",
+    "dev": "vitepress --mode dev",
+    "build": "vitepress build --mode prod",
     "preview": "vitepress preview"
   },
   "keywords": ["vitepress", "documentation"],

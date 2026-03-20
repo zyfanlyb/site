@@ -18,6 +18,33 @@
         <a-form-item label="关键词">
           <a-input v-model:value="searchForm.keyword" placeholder="模糊搜索标题/摘要/内容" style="width: 220px" />
         </a-form-item>
+        <a-form-item label="分类">
+          <a-select
+            v-model:value="searchForm.categoryId"
+            style="width: 160px"
+            allowClear
+            placeholder="选择分类"
+            @change="onSearchCategoryChange"
+          >
+            <a-select-option v-for="item in categoryList" :key="item.id" :value="item.id">
+              {{ item.name }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="类型">
+          <a-select
+            v-model:value="searchForm.typeIds"
+            mode="multiple"
+            style="width: 240px"
+            allowClear
+            :disabled="!searchForm.categoryId"
+            placeholder="可多选类型"
+          >
+            <a-select-option v-for="item in typeList" :key="item.id" :value="item.id">
+              {{ item.name }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
         <a-form-item label="状态">
           <a-select v-model:value="searchForm.status" style="width: 120px" allowClear>
             <a-select-option value="1">已发布</a-select-option>
@@ -112,8 +139,12 @@ const categoryConfigRef = ref(null)
 const typeConfigRef = ref(null)
 const loading = ref(false)
 const dataSource = ref([])
+const categoryList = ref([])
+const typeList = ref([])
 const searchForm = reactive({
   keyword: '',
+  categoryId: undefined,
+  typeIds: [],
   status: undefined
 })
 
@@ -124,7 +155,7 @@ const hasAnyActionPermission = computed(() => hasViewPermission.value || hasEdit
 
 const columns = computed(() => {
   const baseColumns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+    // { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { title: '标题', dataIndex: 'title', key: 'title', width: 120, ellipsis: true },
     { title: '分类', dataIndex: 'categoryName', key: 'categoryName', width: 120 },
     { title: '类型', dataIndex: 'typeName', key: 'typeName', width: 100 },
@@ -145,6 +176,8 @@ const fetchData = async () => {
       pageSize: pagination.pageSize,
       data: {
         keyword: searchForm.keyword || undefined,
+        categoryId: searchForm.categoryId ?? undefined,
+        typeIds: Array.isArray(searchForm.typeIds) && searchForm.typeIds.length ? searchForm.typeIds : undefined,
         status: searchForm.status !== undefined ? Number(searchForm.status) : undefined
       }
     })
@@ -167,6 +200,35 @@ const fetchData = async () => {
   }
 }
 
+const fetchCategoryList = async () => {
+  try {
+    const res = await post('/cms/category/list')
+    categoryList.value = res.data || []
+  } catch (error) {
+    console.error('获取分类列表失败:', error)
+    categoryList.value = []
+  }
+}
+
+const fetchTypeList = async (categoryId) => {
+  if (!categoryId) {
+    typeList.value = []
+    return
+  }
+  try {
+    const res = await post('/cms/type/list', { data: { categoryId } })
+    typeList.value = res.data || []
+  } catch (error) {
+    console.error('获取类型列表失败:', error)
+    typeList.value = []
+  }
+}
+
+const onSearchCategoryChange = () => {
+  searchForm.typeIds = []
+  fetchTypeList(searchForm.categoryId)
+}
+
 const handleTableChange = (page, pageSize) => {
   if (page) pagination.current = page
   if (pageSize) pagination.pageSize = pageSize
@@ -175,6 +237,8 @@ const handleTableChange = (page, pageSize) => {
 
 const resetSearch = () => {
   searchForm.keyword = ''
+  searchForm.categoryId = undefined
+  searchForm.typeIds = []
   searchForm.status = undefined
   resetPagination(pagination)
   fetchData()
@@ -237,6 +301,7 @@ const formatDate = (date) => {
 }
 
 onMounted(() => {
+  fetchCategoryList()
   fetchData()
 })
 </script>

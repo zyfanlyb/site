@@ -4,6 +4,7 @@ import com.zyfan.pojo.web.RequestVo;
 import com.zyfan.pojo.web.ResponseVo;
 import com.zyfan.vo.CmsArticleVo;
 import com.zyfan.vo.CmsCategoryVo;
+import com.zyfan.vo.CmsTypeVo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,4 +32,10 @@ public interface CmsClient {
      */
     @PostMapping("/siteCms/cms/category/list")
     ResponseVo<List<CmsCategoryVo>> listCategories();
+
+    /**
+     * 类型列表（按分类ID过滤）
+     */
+    @PostMapping("/siteCms/cms/type/list")
+    ResponseVo<List<CmsTypeVo>> listTypes(@RequestBody RequestVo<CmsTypeVo> requestVo);
 }

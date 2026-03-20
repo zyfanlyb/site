@@ -1,9 +1,9 @@
 import axios from 'axios'
 import { message } from 'ant-design-vue'
 
-// 创建axios实例
+// 创建axios实例（与 .env 中 VITE_APP_BASE_API 一致，缺省走本地 /api/siteCms 代理到 CMS）
 const service = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_API,
+  baseURL: import.meta.env.VITE_APP_BASE_API || '/api/siteCms',
   timeout: 10000
 })
 

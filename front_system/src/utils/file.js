@@ -54,15 +54,28 @@ const cmsBlobUrlCache = new Map()
  * @returns {Promise<string>} 预览 blob URL
  */
 export async function getCmsFilePreviewUrl(objectName) {
-  if (!objectName) return ''
-  if (cmsBlobUrlCache.has(objectName)) return cmsBlobUrlCache.get(objectName)
+  const key = objectName == null ? '' : String(objectName).trim()
+  if (!key) return ''
+  if (cmsBlobUrlCache.has(key)) return cmsBlobUrlCache.get(key)
   try {
     const response = await service.get('/file/preview', {
-      params: { objectName },
+      params: { objectName: key },
       responseType: 'blob'
     })
-    const blobUrl = URL.createObjectURL(response.data)
-    cmsBlobUrlCache.set(objectName, blobUrl)
+    const blob = response.data
+    // 后端异常时可能返回 JSON（仍为 blob），不能当成图片
+    if (blob && blob.type && blob.type.includes('application/json')) {
+      const text = await blob.text()
+      try {
+        const j = JSON.parse(text)
+        console.error('CMS 文件预览失败:', j.message || j.msg || text)
+      } catch {
+        console.error('CMS 文件预览失败:', text)
+      }
+      return ''
+    }
+    const blobUrl = URL.createObjectURL(blob)
+    cmsBlobUrlCache.set(key, blobUrl)
     return blobUrl
   } catch (e) {
     console.error('CMS 文件预览失败:', e)

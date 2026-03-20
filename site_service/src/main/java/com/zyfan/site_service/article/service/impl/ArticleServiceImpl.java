@@ -1,13 +1,14 @@
-package com.zyfan.site_service.blogs.service.impl;
+package com.zyfan.site_service.article.service.impl;
 
 import com.zyfan.client.CmsClient;
 import com.zyfan.exception.ZException;
 import com.zyfan.pojo.web.CodeStatusEnum;
 import com.zyfan.pojo.web.RequestVo;
 import com.zyfan.pojo.web.ResponseVo;
-import com.zyfan.site_service.blogs.service.ArticleService;
+import com.zyfan.site_service.article.service.ArticleService;
 import com.zyfan.vo.CmsArticleVo;
 import com.zyfan.vo.CmsCategoryVo;
+import com.zyfan.vo.CmsTypeVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public ResponseVo<List<CmsArticleVo>> getArticles(Long categoryId,
                                                            String categoryName,
-                                                           Long typeId,
+                                                           List<Long> typeIds,
                                                            String keyword,
                                                            Integer pageNum,
                                                            Integer pageSize) {
@@ -72,8 +73,12 @@ public class ArticleServiceImpl implements ArticleService {
             }
         }
 
-        if (typeId != null) {
-            params.setTypeId(typeId);
+        if (typeIds != null && !typeIds.isEmpty()) {
+            List<Long> distinct = typeIds.stream()
+                    .filter(x -> x != null && x > 0)
+                    .distinct()
+                    .collect(Collectors.toList());
+            params.setTypeIds(distinct.isEmpty() ? null : distinct);
         }
 
         requestVo.setData(params);
@@ -103,9 +108,16 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public ResponseVo<List<Object>> getTypes(Long categoryId) {
-        // 目前 cms interface 未提供 types 的 Feign；先保持旧行为
-        throw new ZException("类型接口暂未通过 Feign 实现");
+    public ResponseVo<List<CmsTypeVo>> getTypes(Long categoryId) {
+        RequestVo<CmsTypeVo> requestVo = new RequestVo<>();
+        CmsTypeVo params = new CmsTypeVo();
+        params.setCategoryId(categoryId);
+        requestVo.setData(params);
+        ResponseVo<List<CmsTypeVo>> resp = cmsClient.listTypes(requestVo);
+        if (resp == null || resp.getCode() != CodeStatusEnum.SUCCESS.getCode()) {
+            throw new ZException("获取类型列表失败");
+        }
+        return resp;
     }
 
     @Override

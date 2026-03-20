@@ -16,6 +16,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '博客', link: '/dynamic/blogs' },
       { text: '项目经历', link: '/dynamic/projects' },
+      { text: '智能体', link: '/dynamic/agent' }
     ],
     
     // 侧边栏
