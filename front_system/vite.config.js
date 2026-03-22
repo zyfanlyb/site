@@ -5,7 +5,7 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  base: '/site', // 设置基础路径，用于部署在子路径下
+  base: '/cms', // 设置基础路径，用于部署在子路径下
   server: {
     proxy: {
       // 代理所有以/api开头的请求

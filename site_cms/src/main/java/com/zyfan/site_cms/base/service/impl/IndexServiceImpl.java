@@ -76,7 +76,7 @@ public class IndexServiceImpl implements IndexService {
         redisTemplate.opsForValue().set(cacheKey, JSON.toJSONString(cacheData), 1, TimeUnit.MINUTES);
 
         // 重定向到前端index页面，携带UUID参数
-        String frontendUrl = redirectUrl.replaceFirst("(https?://[^:/]+(?::\\d+)?).*", "$1")+"/site/?uuid=" + URLEncoder.encode(uuid, "UTF-8");
+        String frontendUrl = redirectUrl.replaceFirst("(https?://[^:/]+(?::\\d+)?).*", "$1")+"/cms/?uuid=" + URLEncoder.encode(uuid, "UTF-8");
         response.sendRedirect(frontendUrl);
     }
 

@@ -23,9 +23,3 @@ spring:
   config:
     import:
       - nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}
-  elasticsearch:
-    uris: http://www.zyfan.top:10009
-    connection-timeout: 5s
-    socket-timeout: 30s
-    username: elastic
-    password: zyf356594794

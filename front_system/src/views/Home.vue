@@ -120,9 +120,9 @@ function isHomeMenuData(menu) {
     return false;
   }
   const rawPath = String(menu.path || menu.key || '').replace(/^\/+|\/+$/g, '').toLowerCase();
-  const normalizedPath = rawPath.replace(/^site\//, '');
+  const normalizedPath = rawPath.replace(/^cms\//, '');
   const name = String(menu.name || menu.label || menu.title || '').trim();
-  return name === '首页' || rawPath === 'site/index' || normalizedPath === 'index';
+  return name === '首页' || rawPath === 'cms/index' || normalizedPath === 'index';
 }
 
 function ensureHomeMenuFirst(items) {
@@ -132,9 +132,9 @@ function ensureHomeMenuFirst(items) {
       return false;
     }
     const key = String(item.key || '').replace(/^\/+|\/+$/g, '').toLowerCase();
-    const normalizedKey = key.replace(/^site\//, '');
+    const normalizedKey = key.replace(/^cms\//, '');
     const label = String(item.label || '').trim();
-    return label === '首页' || key === 'site/index' || normalizedKey === 'index';
+    return label === '首页' || key === 'cms/index' || normalizedKey === 'index';
   };
 
   // 移除所有首页菜单（避免重复）
@@ -142,7 +142,7 @@ function ensureHomeMenuFirst(items) {
 
   // 在最前面插入固定的首页菜单
   filteredList.unshift({
-    key: '/site/index',
+    key: '/cms/index',
     label: '首页',
     title: '首页',
     icon: () => h(Icons.HomeOutlined)
@@ -174,19 +174,19 @@ function flattenMenus(menus) {
     // 处理路径：确保路径格式与路由path匹配
     let menuPath = menu.path;
     if (menuPath) {
-      // 如果path不是以/site开头，需要加上/site前缀（与路由生成逻辑保持一致）
-      if (!menuPath.startsWith('/site')) {
+      // 如果path不是以/cms开头，需要加上/cms前缀（与路由生成逻辑保持一致）
+      if (!menuPath.startsWith('/cms')) {
         if (menuPath.startsWith('/')) {
-          // 以/开头但不是/site，加上/site前缀
-          menuPath = '/site' + menuPath;
+          // 以/开头但不是/cms，加上/cms前缀
+          menuPath = '/cms' + menuPath;
         } else {
-          // 相对路径，加上/site/前缀
-          menuPath = '/site/' + menuPath;
+          // 相对路径，加上/cms/前缀
+          menuPath = '/cms/' + menuPath;
         }
       }
     } else {
       // 如果没有path，使用默认路径（对于目录类型，使用id作为key）
-      menuPath = menu.key || `/site/menu_${menu.id}`;
+      menuPath = menu.key || `/cms/menu_${menu.id}`;
     }
 
     // 首页图标固定为 HomeOutlined
@@ -232,15 +232,15 @@ function findMenuKeysByPath(path, menus, parentKeys = []) {
   for (const menu of menus) {
     let menuPath = menu.path;
     if (menuPath) {
-      if (!menuPath.startsWith('/site')) {
+      if (!menuPath.startsWith('/cms')) {
         if (menuPath.startsWith('/')) {
-          menuPath = '/site' + menuPath;
+          menuPath = '/cms' + menuPath;
         } else {
-          menuPath = '/site/' + menuPath;
+          menuPath = '/cms/' + menuPath;
         }
       }
     } else {
-      menuPath = menu.key || `/site/menu_${menu.id}`;
+      menuPath = menu.key || `/cms/menu_${menu.id}`;
     }
 
     const currentKeys = [...parentKeys, menuPath];
@@ -299,7 +299,7 @@ const handleMenuClick = async ({ key }) => {
   } else if (key === 'profile') {
     // 跳转到个人中心页面
     dropdownOpen.value = false;
-    router.push('/site/profile');
+    router.push('/cms/profile');
   }
 };
 

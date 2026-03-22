@@ -8,10 +8,16 @@
     "build": "vitepress build --mode prod",
     "preview": "vitepress preview"
   },
-  "keywords": ["vitepress", "documentation"],
+  "keywords": [
+    "vitepress",
+    "documentation"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1"
   }
 }

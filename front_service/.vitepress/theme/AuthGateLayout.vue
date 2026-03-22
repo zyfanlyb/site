@@ -1,9 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import { useRoute } from 'vitepress'
 
 import LoginRequired from '../components/LoginRequired.vue'
+import HomeShowcaseStrip from './HomeShowcaseStrip.vue'
 
 const { Layout: DefaultLayout } = DefaultTheme
 const route = useRoute()
@@ -27,7 +28,11 @@ function normalizeHref(href) {
   return '/' + s
 }
 
-const loginHref = normalizeHref(rawLoginHref+'?redirectUrl='+encodeURIComponent(window.location.origin))
+// SSR: window 不存在，因此 redirectUrl 需要做保护
+const siteOrigin = typeof window === 'undefined' ? '' : window.location.origin
+const loginHref = normalizeHref(
+  rawLoginHref + '?redirectUrl=' + encodeURIComponent(siteOrigin),
+)
 
 const isAgentPage = computed(() => {
   // route.path 是响应式的，能覆盖“点击 tab 后不刷新”的情况
@@ -48,11 +53,30 @@ const hasToken = computed(() => {
 })
 
 const gate = computed(() => isAgentPage.value && !hasToken.value)
+
+function kickHomeRevealSync() {
+  if (typeof window === 'undefined') return
+  window.requestAnimationFrame(() => {
+    window.dispatchEvent(new CustomEvent('vp-home-reveal-kick'))
+  })
+}
+
+onMounted(kickHomeRevealSync)
+watch(
+  () => route.path,
+  () => kickHomeRevealSync(),
+)
 </script>
 
 <template>
   <div :class="{ 'auth-gate-hide-content': gate }">
     <DefaultLayout>
+      <!-- tagline 之后：三栏装饰卡片（无链接）；插在 home-hero-info-after 更稳 -->
+      <template #home-hero-info-after>
+        <div class="home-hero-actions-extra">
+          <HomeShowcaseStrip />
+        </div>
+      </template>
       <!-- 仅在未登录时插入提示；正文仍由 VitePress 渲染，但会被下方样式隐藏 -->
       <template v-if="gate" #doc-before>
         <LoginRequired :loginHref="loginHref" />

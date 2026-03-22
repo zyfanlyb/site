@@ -31,7 +31,7 @@ function ensureRequiresAuth(routes) {
  * @param {String} parentPath - 父路径前缀
  * @returns {Array} 路由配置数组
  */
-function generateRoutesFromMenus(menus, parentPath = '/site') {
+function generateRoutesFromMenus(menus, parentPath = '/cms') {
     const routes = [];
     
     menus.forEach(menu => {
@@ -57,22 +57,22 @@ function generateRoutesFromMenus(menus, parentPath = '/site') {
             return; // 如果没有path，跳过
         }
         
-        // 处理路径：如果path是绝对路径（以/site开头），直接使用；否则拼接父路径
-        if (routePath.startsWith('/site')) {
+        // 处理路径：如果path是绝对路径（以/cms开头），直接使用；否则拼接父路径
+        if (routePath.startsWith('/cms')) {
             // 已经是绝对路径，直接使用
         } else if (routePath.startsWith('/')) {
-            // 以/开头但不是/site，需要加上/site前缀
-            routePath = '/site' + routePath;
+            // 以/开头但不是/cms，需要加上/cms前缀
+            routePath = '/cms' + routePath;
         } else {
             // 相对路径，拼接父路径
             routePath = parentPath + '/' + routePath;
         }
         
-        // 清理路径，防止重复的/site
-        routePath = routePath.replace(/\/site\/site/g, '/site').replace(/\/+/g, '/');
+        // 清理路径，防止重复的/cms
+        routePath = routePath.replace(/\/cms\/cms/g, '/cms').replace(/\/+/g, '/');
         
-        // 转换为相对于/site的相对路径（用于router.addRoute）
-        let routerPath = routePath.replace('/site', '').replace(/^\//, '') || 'index';
+        // 转换为相对于/cms的相对路径（用于router.addRoute）
+        let routerPath = routePath.replace('/cms', '').replace(/^\//, '') || 'index';
         
         // 构建路由配置
         const route = {
@@ -154,10 +154,10 @@ const router = createRouter({
     history: createWebHistory(),
     routes: [
         {
-            path: '/site',
-            name: 'site',
+            path: '/cms',
+            name: 'cms',
             redirect: (to) => ({
-                path: '/site/index',
+                path: '/cms/index',
                 query: to.query,
                 hash: to.hash
             }),
@@ -179,7 +179,7 @@ const router = createRouter({
             ]
         },
         {
-            path: '/site/login',
+            path: '/cms/login',
             name: 'login',
             component: ()=>import("@/views/Login.vue"),
             meta: {
@@ -188,7 +188,7 @@ const router = createRouter({
         },
         {
             path: '/',
-            redirect: '/site',
+            redirect: '/cms',
         }
     ]
 })
@@ -216,7 +216,7 @@ export function restoreDynamicRoutes(menus, force = false) {
     // 检查路由是否已添加，避免重复添加
     if (!authStore.dynamicRoutesAdded) {
         dynamicRoutes.forEach(route => {
-            router.addRoute('site', route);
+            router.addRoute('cms', route);
         });
         authStore.$patch({ dynamicRoutesAdded: true });
     }
@@ -225,12 +225,12 @@ export function restoreDynamicRoutes(menus, force = false) {
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
     const token = localStorage.getItem('user_token');
-    const issitePath = to.path.startsWith('/site');
-    const isLoginRoute = to.path === '/site/login' || to.name === 'login';
+    const iscmsPath = to.path.startsWith('/cms');
+    const isLoginRoute = to.path === '/cms/login' || to.name === 'login';
     
     // 如果访问 /auth 路径且有uuid参数，则尝试从uuid获取token并保存redirectUrl
     // 不再限制“没有token”的情况，允许覆盖现有会话，按最新uuid为准
-    if (to.path.startsWith('/site') && to.query.uuid) {
+    if (to.path.startsWith('/cms') && to.query.uuid) {
         try {
             const service = (await import('@/utils/request.js')).default;
             const formData = new URLSearchParams();
@@ -255,8 +255,8 @@ router.beforeEach(async (to, from, next) => {
                     // 移除URL中的uuid参数，重新导航
                     const newQuery = { ...to.query };
                     delete newQuery.uuid;
-                    // 兼容后端重定向到 /site/（尾斜杠）导致的路由不匹配风险
-                    next({ path: '/site/index', query: newQuery, replace: true });
+                    // 兼容后端重定向到 /cms/（尾斜杠）导致的路由不匹配风险
+                    next({ path: '/cms/index', query: newQuery, replace: true });
                     return;
                 } catch (initError) {
                     console.error('初始化失败:', initError);
@@ -273,8 +273,8 @@ router.beforeEach(async (to, from, next) => {
         }
     }
     
-    // 处理所有 /site 下的路由（除了登录页）
-    if (issitePath && !isLoginRoute) {
+    // 处理所有 /cms 下的路由（除了登录页）
+    if (iscmsPath && !isLoginRoute) {
         // 如果没有token，跳转到登录页
         if (!token) {
             const savedRedirectUrl = authStore.redirectUrl;
@@ -290,7 +290,7 @@ router.beforeEach(async (to, from, next) => {
         
         const { menus, userInfo } = storeToRefs(authStore);
 
-        // 动态路由未加载时，不管从哪个 /site 路径进入都优先恢复动态路由。
+        // 动态路由未加载时，不管从哪个 /cms 路径进入都优先恢复动态路由。
         let routeExists = router.resolve(to.path).matched.length > 0;
         const shouldRestoreDynamicRoutes = !routeExists || !authStore.dynamicRoutesAdded;
 
@@ -317,11 +317,11 @@ router.beforeEach(async (to, from, next) => {
 
                 // 菜单里没有目标路径，兜底回首页
                 console.warn(`Route ${to.path} not found in menus, redirecting to home`);
-                next({ name: 'site' });
+                next({ name: 'cms' });
                 return;
             } catch (error) {
                 console.error('Failed to restore routes:', error);
-                next({ name: 'site' });
+                next({ name: 'cms' });
                 return;
             }
         }

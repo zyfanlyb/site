@@ -52,8 +52,8 @@ const login = async (code) => {
 
 // 处理欢迎动画完成
 const handleWelcomeComplete = () => {
-  // 从查询参数中获取原始要跳转的路径，如果没有则跳转到 /site
-  const redirect = route.query.redirect || '/site'
+  // 从查询参数中获取原始要跳转的路径，如果没有则跳转到 /cms
+  const redirect = route.query.redirect || '/cms'
   router.push(redirect)
 }
 
