@@ -1,0 +1,100 @@
+.VPNavBar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--vp-nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: color-mix(in srgb, var(--vp-c-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.VPNavBarTitle .title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--vp-c-text-1);
+}
+
+.VPNavBarMenu {
+  display: flex;
+  gap: 18px;
+}
+
+.VPNavBarMenuLink {
+  text-decoration: none;
+  color: var(--vp-c-text-2);
+}
+
+.VPNavBarMenuLink.active {
+  color: var(--vp-c-brand-1);
+}
+
+.VPContent {
+  min-height: calc(100vh - var(--vp-nav-height));
+}
+
+.VPFooter {
+  padding: 20px 18px;
+  border-top: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+}
+
+.VPFooter a {
+  color: var(--vp-c-brand-1);
+}
+
+.VPFooterMessage {
+  margin-bottom: 6px;
+}
+
+.VPFooterCopyright {
+  color: var(--vp-c-text-3);
+}
+
+/* Home hero (minimal VitePress-ish) */
+.VPHomeHero {
+  display: block;
+}
+
+.VPHomeHero .container {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.VPHomeHero .main {
+  padding-top: 42px;
+  padding-bottom: 28px;
+}
+
+.VPHeroName {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.25rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.VPHeroText {
+  margin: 14px 0 0;
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  font-weight: 800;
+  color: var(--vp-c-brand-1);
+  letter-spacing: -0.02em;
+}
+
+.VPHeroTagline {
+  margin: 12px 0 0;
+  max-width: 44rem;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--vp-c-text-2);
+}
+
