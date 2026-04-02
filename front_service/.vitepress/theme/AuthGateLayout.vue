@@ -5,6 +5,7 @@ import { useRoute } from 'vitepress'
 
 import LoginRequired from '../components/LoginRequired.vue'
 import HomeShowcaseStrip from './HomeShowcaseStrip.vue'
+import { normalizeLoginHref } from './utils/normalizeLoginHref.js'
 
 const { Layout: DefaultLayout } = DefaultTheme
 const route = useRoute()
@@ -12,25 +13,9 @@ const route = useRoute()
 const tokenKey = import.meta.env.VITE_USER_TOKEN_KEY || 'user_token'
 const rawLoginHref = import.meta.env.VITE_AGENT_LOGIN_HREF || '/auth/login'
 
-function normalizeHref(href) {
-  const s = String(href || '').trim()
-  if (!s) return '/auth/login'
-
-  // 支持完整地址：http(s)://...
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  // 支持协议相对：//host/xxx
-  if (s.startsWith('//')) return s
-
-  // 支持站内路径：/xxx
-  if (s.startsWith('/')) return s
-
-  // 否则当作相对路径，补前导 /
-  return '/' + s
-}
-
 // SSR: window 不存在，因此 redirectUrl 需要做保护
 const siteOrigin = typeof window === 'undefined' ? '' : window.location.origin
-const loginHref = normalizeHref(
+const loginHref = normalizeLoginHref(
   rawLoginHref + '?redirectUrl=' + encodeURIComponent(siteOrigin),
 )
 
