@@ -17,8 +17,8 @@
   --sky-primary-strong: #3b82f6; /* 稍深一点用于悬停 */
   --sky-primary-soft: rgba(96, 165, 250, 0.12);
   --sky-accent-yellow: #facc15;
-  /* 全局字体 - 使用霞鹜文楷（LXGW WenKai） */
-  --sky-font-family: "LXGW WenKai", sans-serif;
+  /* 全局字体：使用系统/浏览器默认字体 */
+  --sky-font-family: inherit;
   /* 全局基础字体大小 */
   --sky-font-size-base: 16px;
 }
