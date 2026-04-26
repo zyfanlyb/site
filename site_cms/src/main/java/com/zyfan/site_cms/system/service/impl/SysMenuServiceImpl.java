@@ -45,21 +45,45 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     @Override
     public List<SysMenu> getUserMenus(Long userId) {
         // 1. 获取用户角色ID列表
-        List<Long> roleIds = Optional.ofNullable(sysUserRoleService.list(Wrappers.lambdaQuery(SysUserRole.class).eq(SysUserRole::getUserId, userId))).orElse(new ArrayList<>())
-                .stream().map(SysUserRole::getRoleId).toList();
+        List<Long> roleIds = Optional.ofNullable(
+                        sysUserRoleService.list(Wrappers.lambdaQuery(SysUserRole.class).eq(SysUserRole::getUserId, userId))
+                ).orElseGet(ArrayList::new)
+                .stream()
+                .map(SysUserRole::getRoleId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 用户没有任何角色时，直接返回空菜单（不要抛错）
+        if (roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // 2. 获取角色关联的菜单ID列表
-        List<Long> menuIds = Optional.ofNullable(sysRoleMenuService.list(Wrappers.lambdaQuery(SysRoleMenu.class).in(SysRoleMenu::getRoleId, roleIds)))
-                .orElse(new ArrayList<>())
-                .stream().map(SysRoleMenu::getMenuId).toList();
+        List<Long> menuIds = Optional.ofNullable(
+                        sysRoleMenuService.list(Wrappers.lambdaQuery(SysRoleMenu.class).in(SysRoleMenu::getRoleId, roleIds))
+                ).orElseGet(ArrayList::new)
+                .stream()
+                .map(SysRoleMenu::getMenuId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 角色没有关联任何菜单时，直接返回空菜单（不要抛错）
+        if (menuIds.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // 3. 查询这些菜单
         List<SysMenu> menus = Optional.ofNullable(sysMenuMapper.selectList(
                         Wrappers.lambdaQuery(SysMenu.class)
                                 .eq(SysMenu::getStatus, true)
                                 .in(SysMenu::getId, menuIds)
-                )).orElse(new ArrayList<>())
-                .stream().sorted(Comparator.comparing(SysMenu::getSort).thenComparing(Comparator.comparing(SysMenu::getCreateTime, Comparator.reverseOrder()))).toList();
+                )).orElseGet(ArrayList::new)
+                .stream()
+                .sorted(Comparator.comparing(SysMenu::getSort, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Comparator.comparing(SysMenu::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))))
+                .toList();
         return menus;
     }
 

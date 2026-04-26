@@ -90,14 +90,20 @@ export const useAuthStore = defineStore('auth', {
 
           sortMenuTree(tree)
 
-          tree.unshift({
-            id: 'fixed_home',
-            name: '首页',
-            path: 'index',
-            type: '1',
-            icon: 'HomeOutlined',
-            children: []
-          })
+          const hasHome = (nodes) => {
+            if (!nodes || nodes.length === 0) return false
+            return nodes.some(n => n?.path === 'index' || n?.path === '/site/index' || (n?.children && hasHome(n.children)))
+          }
+          if (!hasHome(tree)) {
+            tree.unshift({
+              id: 'fixed_home',
+              name: '首页',
+              path: 'index',
+              type: '1',
+              icon: 'HomeOutlined',
+              children: []
+            })
+          }
 
           return tree
         }
