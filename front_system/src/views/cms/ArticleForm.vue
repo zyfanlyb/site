@@ -72,6 +72,7 @@
               :preview="true"
               :language="'zh-CN'"
               class="md-editor-inner"
+              :onUploadImg="handleUploadImg"
               @onHtmlChanged="handleEditorHtmlChanged"
             />
           </div>
@@ -147,6 +148,7 @@
             :toolbars-exclude="['fullscreen', 'maximize']"
             :page-fullscreen="false"
             class="md-editor-fullscreen"
+            :onUploadImg="handleUploadImg"
             @onHtmlChanged="handleFullscreenEditorHtmlChanged"
           />
         </div>
@@ -289,6 +291,50 @@ const handleCoverUpload = async (options) => {
   } catch (error) {
     message.error('封面上传失败: ' + (error.message || '未知错误'))
     onError(error)
+  }
+}
+
+/**
+ * md-editor-v3 图片上传回调：
+ * - 上传到 CMS 的 /file/upload，拿到 objectName
+ * - 回填给编辑器：用 objectName 作为图片 src
+ *   预览时由 hydrateCmsPreviewImages 把 objectName 替换成带 token 的 blob URL
+ */
+const handleUploadImg = async (files, callback) => {
+  const list = Array.from(files || []).filter(Boolean)
+  if (!list.length) return
+
+  try {
+    const uploads = await Promise.all(
+      list.map(async (file) => {
+        const isImage = String(file?.type || '').startsWith('image/')
+        if (!isImage) {
+          throw new Error('只能上传图片文件')
+        }
+        const maxSize = 10 * 1024 * 1024 // 10MB
+        if (file.size > maxSize) {
+          throw new Error('图片不能超过 10MB')
+        }
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await service.post('/file/upload', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        if (res?.code !== 200 || !res?.data) {
+          throw new Error(res?.message || '上传失败')
+        }
+        return String(res.data).trim()
+      })
+    )
+
+    const objectNames = uploads.filter(Boolean)
+    if (!objectNames.length) return
+    // md-editor-v3 会将返回的字符串作为 markdown 图片地址插入
+    callback(objectNames)
+    message.success('图片已插入')
+  } catch (e) {
+    console.error(e)
+    message.error(`图片上传失败：${e?.message || '未知错误'}`)
   }
 }
 

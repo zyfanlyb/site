@@ -8,6 +8,8 @@ import com.zyfan.site_cms.system.service.ISysMenuService;
 import com.zyfan.vo.TokenVo;
 import com.zyfan.vo.UserInfo;
 import com.zyfan.vo.UserPasswordVo;
+import com.zyfan.vo.VerifyCodeSendVo;
+import com.zyfan.vo.VerifyCodeVo;
 import com.zyfan.exception.ZException;
 import com.zyfan.site_cms.base.service.IndexService;
 import com.zyfan.pojo.web.CodeStatusEnum;
@@ -193,6 +195,39 @@ public class IndexServiceImpl implements IndexService {
             throw new ZException(CodeStatusEnum.UNAUTHORIZED, "更新头像失败");
         }
         return responseVo.getData();
+    }
+
+    @Override
+    public void sendEmailCode(RequestVo<VerifyCodeSendVo> requestVo, HttpServletRequest request) {
+        ResponseVo res;
+        String userToken = request == null ? null : request.getHeader("Authorization");
+        try {
+            res = authClient.sendEmailCode(requestVo, flushAccessTokenTask.getAccessToken(), userToken);
+        } catch (Exception e) {
+            flushAccessTokenTask.accessToken = null;
+            flushAccessTokenTask.flushAccessToken();
+            res = authClient.sendEmailCode(requestVo, flushAccessTokenTask.getAccessToken(), userToken);
+        }
+        if (res.getCode() != CodeStatusEnum.SUCCESS.getCode()) {
+            throw new ZException(CodeStatusEnum.UNAUTHORIZED, res.getMessage());
+        }
+    }
+
+    @Override
+    public String verifyEmailCode(RequestVo<VerifyCodeVo> requestVo, HttpServletRequest request) {
+        ResponseVo<String> res;
+        String userToken = request == null ? null : request.getHeader("Authorization");
+        try {
+            res = authClient.verifyEmailCode(requestVo, flushAccessTokenTask.getAccessToken(), userToken);
+        } catch (Exception e) {
+            flushAccessTokenTask.accessToken = null;
+            flushAccessTokenTask.flushAccessToken();
+            res = authClient.verifyEmailCode(requestVo, flushAccessTokenTask.getAccessToken(), userToken);
+        }
+        if (res.getCode() != CodeStatusEnum.SUCCESS.getCode()) {
+            throw new ZException(CodeStatusEnum.UNAUTHORIZED, res.getMessage());
+        }
+        return res.getData();
     }
 
     private void cacheUserInfo(String token) {

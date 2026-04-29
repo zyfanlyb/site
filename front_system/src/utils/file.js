@@ -11,7 +11,7 @@ const blobUrlCache = new Map()
  * @param {string} objectName - 文件路径（objectName，格式：yyyy/MM/dd/uuid.extension）
  * @returns {Promise<string>} 预览URL（blob URL）
  */
-export async function getAuthFilePreviewUrl(objectName) {
+export async function getFilePreviewUrl(objectName) {
   if (!objectName) {
     return ''
   }
@@ -22,7 +22,8 @@ export async function getAuthFilePreviewUrl(objectName) {
   }
   
   try {
-    const url = `/file/auth/preview`
+    // 与 agent 一致：POST /file/preview，表单参数 fileName
+    const url = `/file/preview`
 
     // 使用 POST 请求并通过表单参数传递文件名（参数名：fileName）
     const formData = new FormData()
@@ -44,6 +45,11 @@ export async function getAuthFilePreviewUrl(objectName) {
     console.error('获取文件预览失败:', error)
     return ''
   }
+}
+
+// 兼容旧命名：历史上个人中心/首页用 getAuthFilePreviewUrl
+export async function getAuthFilePreviewUrl(objectName) {
+  return getFilePreviewUrl(objectName)
 }
 
 const cmsBlobUrlCache = new Map()

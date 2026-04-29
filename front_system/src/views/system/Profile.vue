@@ -41,6 +41,18 @@
                 <a-form-item label="邮箱" name="email">
                   <a-input v-model:value="form.email"/>
                 </a-form-item>
+                <a-form-item v-if="emailChanged" label="邮箱验证码" name="emailCode">
+                  <div class="email-code-row">
+                    <a-input v-model:value="emailCode" style="flex: 1"/>
+                    <a-button
+                      :disabled="emailCodeSending || emailCodeCountdown > 0 || !form.email"
+                      :loading="emailCodeSending"
+                      @click="sendEmailUpdateCode"
+                    >
+                      {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
+                    </a-button>
+                  </div>
+                </a-form-item>
                 <a-form-item label="手机号" name="phone">
                   <a-input v-model:value="form.phone"/>
                 </a-form-item>
@@ -95,14 +107,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watchEffect, onMounted} from 'vue';
+import {ref, watchEffect, onMounted, computed, onUnmounted} from 'vue';
 import {UserOutlined} from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {useAuthStore} from '@/stores/auth';
 import {storeToRefs} from 'pinia';
 import service from '@/utils/request';
-import {getAuthFilePreviewUrl} from '@/utils/file';
+import {getFilePreviewUrl} from '@/utils/file';
 
 const authStore = useAuthStore();
 const {userInfo} = storeToRefs(authStore);
@@ -121,6 +133,18 @@ const form = ref({
   nickname: '',
   email: '',
   phone: ''
+});
+
+const originalEmail = ref('');
+const emailCode = ref('');
+const emailCodeSending = ref(false);
+const emailCodeCountdown = ref(0);
+let emailCodeTimer: any = null;
+
+const emailChanged = computed(() => {
+  const now = (form.value.email || '').trim();
+  const old = (originalEmail.value || '').trim();
+  return now !== old;
 });
 
 const passwordForm = ref({
@@ -215,6 +239,13 @@ const loadUserInfo = async () => {
   form.value.nickname = data.nickname || '';
   form.value.email = data.email || '';
   form.value.phone = data.phone || '';
+  originalEmail.value = data.email || '';
+  emailCode.value = '';
+  emailCodeCountdown.value = 0;
+  if (emailCodeTimer) {
+    clearInterval(emailCodeTimer);
+    emailCodeTimer = null;
+  }
   // 同步到全局 store，保证头像/昵称一致
   await authStore.fetchUserInfo();
 };
@@ -223,10 +254,17 @@ onMounted(async () => {
   await loadUserInfo();
 });
 
+onUnmounted(() => {
+  if (emailCodeTimer) {
+    clearInterval(emailCodeTimer);
+    emailCodeTimer = null;
+  }
+});
+
 // 同 Home.vue，一样根据 userInfo.avatar 生成预览 URL
 watchEffect(async () => {
   if (userInfo.value?.avatar) {
-    avatarUrl.value = await getAuthFilePreviewUrl(userInfo.value.avatar);
+    avatarUrl.value = await getFilePreviewUrl(userInfo.value.avatar);
   } else {
     avatarUrl.value = '';
   }
@@ -281,18 +319,64 @@ const handleSaveInfo = async () => {
 
   saving.value = true;
   try {
+    let emailVerifyTicket = '';
+    if (emailChanged.value && email) {
+      const code = (emailCode.value || '').trim();
+      if (!/^\d{6}$/.test(code)) {
+        message.error('请输入 6 位邮箱验证码');
+        return;
+      }
+      const verifyRes = await service.post('/user/verify/email/verifyCode', {
+        data: { email, code, scene: 'updateEmail' }
+      });
+      emailVerifyTicket = verifyRes.data;
+    }
     await service.post('/user/updateInfo', {
       ...form.value,
       email,
-      phone
+      phone,
+      emailVerifyTicket
     });
     message.success('保存成功');
     await authStore.fetchUserInfo();
+    originalEmail.value = email;
+    emailCode.value = '';
   } catch (e) {
     console.error(e);
     message.error('保存失败');
   } finally {
     saving.value = false;
+  }
+};
+
+const sendEmailUpdateCode = async () => {
+  const email = (form.value.email || '').trim();
+  if (!email) {
+    message.error('请输入邮箱');
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    message.error('邮箱格式不正确');
+    return;
+  }
+  try {
+    emailCodeSending.value = true;
+    await service.post('/user/verify/email/sendCode', {
+      data: { email, title: '修改邮箱验证码', scene: 'updateEmail' }
+    });
+    message.success('验证码已发送，请查收邮箱');
+    emailCodeCountdown.value = 60;
+    if (emailCodeTimer) clearInterval(emailCodeTimer);
+    emailCodeTimer = setInterval(() => {
+      emailCodeCountdown.value -= 1;
+      if (emailCodeCountdown.value <= 0) {
+        clearInterval(emailCodeTimer);
+        emailCodeTimer = null;
+      }
+    }, 1000);
+  } finally {
+    emailCodeSending.value = false;
   }
 };
 
@@ -462,6 +546,12 @@ const handleChangePassword = async () => {
   border-radius: 8px;
   height: 36px;
   font-weight: 500;
+}
+
+.email-code-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .password-form {

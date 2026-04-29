@@ -40,6 +40,18 @@ public class FileController {
     }
 
     /**
+     * 与 agent/auth 的头像预览流程保持一致：POST /file/preview 传 fileName。
+     * 这里复用现有的 authPreview 逻辑（转发到 auth 服务）。
+     */
+    @PostMapping("/preview")
+    public void previewByFileName(
+            @RequestParam("fileName") String fileName,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        fileService.authPreview(fileName, request, response);
+    }
+
+    /**
      * 下载文件
      * @param objectName 文件路径（objectName）
      * @param response HTTP响应

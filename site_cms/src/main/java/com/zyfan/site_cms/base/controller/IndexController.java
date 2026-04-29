@@ -4,6 +4,8 @@ import com.zyfan.pojo.web.RequestVo;
 import com.zyfan.vo.TokenVo;
 import com.zyfan.vo.UserInfo;
 import com.zyfan.vo.UserPasswordVo;
+import com.zyfan.vo.VerifyCodeSendVo;
+import com.zyfan.vo.VerifyCodeVo;
 import com.zyfan.site_cms.base.service.IndexService;
 import com.zyfan.pojo.web.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -94,5 +96,22 @@ public class IndexController {
     @PostMapping("/user/updateAvatar")
     public ResponseVo<Boolean> updateAvatar(@RequestParam("avatar") MultipartFile avatar, HttpServletRequest request) {
         return ResponseVo.success(indexService.updateAvatar(avatar, request));
+    }
+
+    /**
+     * 发送邮箱验证码（转发到 auth OpenAPI）
+     */
+    @PostMapping("/user/verify/email/sendCode")
+    public ResponseVo sendEmailCode(@RequestBody com.zyfan.pojo.web.RequestVo<VerifyCodeSendVo> requestVo, HttpServletRequest request) {
+        indexService.sendEmailCode(requestVo, request);
+        return ResponseVo.success();
+    }
+
+    /**
+     * 校验邮箱验证码（转发到 auth OpenAPI），返回 ticket uuid
+     */
+    @PostMapping("/user/verify/email/verifyCode")
+    public ResponseVo<String> verifyEmailCode(@RequestBody com.zyfan.pojo.web.RequestVo<VerifyCodeVo> requestVo, HttpServletRequest request) {
+        return ResponseVo.success(indexService.verifyEmailCode(requestVo, request));
     }
 }

@@ -1,6 +1,7 @@
 import { nextTick } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import BlogList from '../components/BlogList.vue'
+import BlogPreview from '../components/BlogPreview.vue'
 import AgentAuthGate from '../components/AgentAuthGate.vue'
 import HomeContactChannels from './HomeContactChannels.vue'
 import './custom.css'
@@ -11,6 +12,7 @@ export default {
   Layout: AuthGateLayout,
   enhanceApp({ app, router }) {
     app.component('BlogList', BlogList)
+    app.component('BlogPreview', BlogPreview)
     app.component('AgentAuthGate', AgentAuthGate)
     app.component('HomeContactChannels', HomeContactChannels)
 

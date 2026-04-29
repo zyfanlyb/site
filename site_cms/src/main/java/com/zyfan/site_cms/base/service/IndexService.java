@@ -4,6 +4,8 @@ import com.zyfan.pojo.web.RequestVo;
 import com.zyfan.vo.TokenVo;
 import com.zyfan.vo.UserInfo;
 import com.zyfan.vo.UserPasswordVo;
+import com.zyfan.vo.VerifyCodeSendVo;
+import com.zyfan.vo.VerifyCodeVo;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,4 +47,14 @@ public interface IndexService {
      * 修改当前登录用户头像
      */
     Boolean updateAvatar(MultipartFile avatar, HttpServletRequest request);
+
+    /**
+     * 发送邮箱验证码（转发到 auth OpenAPI）
+     */
+    void sendEmailCode(com.zyfan.pojo.web.RequestVo<VerifyCodeSendVo> requestVo, HttpServletRequest request);
+
+    /**
+     * 校验邮箱验证码（转发到 auth OpenAPI），返回 ticket uuid
+     */
+    String verifyEmailCode(com.zyfan.pojo.web.RequestVo<VerifyCodeVo> requestVo, HttpServletRequest request);
 }

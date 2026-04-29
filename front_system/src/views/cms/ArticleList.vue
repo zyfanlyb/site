@@ -16,7 +16,7 @@
     <div class="search-container">
       <a-form layout="inline" :model="searchForm">
         <a-form-item label="关键词">
-          <a-input v-model:value="searchForm.keyword" placeholder="模糊搜索标题/摘要/内容" style="width: 220px" />
+          <a-input v-model:value="searchForm.keyword" placeholder="标题/摘要/内容" style="width: 220px" />
         </a-form-item>
         <a-form-item label="分类">
           <a-select

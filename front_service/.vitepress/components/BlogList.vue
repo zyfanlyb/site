@@ -356,6 +356,22 @@ const scrollable = reactive({})
 const canLeft = reactive({})
 const canRight = reactive({})
 
+const toPreviewHref = (article) => {
+  const id = article?.id
+  if (id == null || id === '') return '/dynamic/blog'
+  return `/dynamic/blog?id=${encodeURIComponent(String(id))}`
+}
+
+/** 仿哔哩哔哩专栏：列表点击新开标签页打开正文，原列表页保留 */
+const openPreviewInNewTab = (article, evt) => {
+  if (evt?.target && typeof evt.target.closest === 'function') {
+    if (evt.target.closest('button.gallery-btn')) return
+  }
+  const href = toPreviewHref(article)
+  if (typeof window === 'undefined') return
+  window.open(href, '_blank', 'noopener,noreferrer')
+}
+
 const rafJobs = new Map()
 const scheduleUpdateGalleryState = (k) => {
   if (!k) return
@@ -526,9 +542,21 @@ onBeforeUnmount(() => {
           :key="keyOf(article, startIndex + localIdx)"
           class="blog-card"
           :ref="setCardRef(startIndex + localIdx)"
+          role="link"
+          tabindex="0"
+          @click="openPreviewInNewTab(article, $event)"
+          @keydown.enter.prevent="openPreviewInNewTab(article)"
         >
           <div class="card-head">
-            <h2 class="card-title" v-html="highlightText(article?.title || '未命名文章')"></h2>
+            <a
+              class="card-title-link"
+              :href="toPreviewHref(article)"
+              target="_blank"
+              rel="noopener noreferrer"
+              @click.stop
+            >
+              <h2 class="card-title" v-html="highlightText(article?.title || '未命名文章')"></h2>
+            </a>
           </div>
 
           <div v-if="coverThumbs(article).length === 1" class="one-cover">
@@ -546,7 +574,7 @@ onBeforeUnmount(() => {
                 class="gallery-btn gallery-btn-left"
                 type="button"
                 :disabled="!canLeft[keyOf(article, startIndex + localIdx)]"
-                @click="scrollGallery(keyOf(article, startIndex + localIdx), -1)"
+                @click.stop="scrollGallery(keyOf(article, startIndex + localIdx), -1)"
                 v-text="'‹'"
               ></button>
 
@@ -569,7 +597,7 @@ onBeforeUnmount(() => {
                 class="gallery-btn gallery-btn-right"
                 type="button"
                 :disabled="!canRight[keyOf(article, startIndex + localIdx)]"
-                @click="scrollGallery(keyOf(article, startIndex + localIdx), 1)"
+                @click.stop="scrollGallery(keyOf(article, startIndex + localIdx), 1)"
                 v-text="'›'"
               ></button>
             </div>
@@ -660,7 +688,11 @@ onBeforeUnmount(() => {
 .empty-title { font-size: 14px; font-weight: 600; color: var(--vp-c-text-2); }
 .blog-list { list-style: none; padding: 0; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 12px; width: 70vw; }
 /* 去掉卡片感：无独立背景/边框/圆角，改为列表分隔线 */
-.blog-card { border: 0; background: transparent; border-radius: 0; padding: 8px 0; display: flex; flex-direction: column; gap: 10px; }
+.blog-card { border: 0; background: transparent; border-radius: 0; padding: 8px 0; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
+.blog-card:focus { outline: none; }
+.blog-card:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--vp-c-brand-1) 20%, transparent); border-radius: 10px; }
+.card-title-link { display: block; text-decoration: none; color: inherit; }
+.card-title-link:hover .card-title { text-decoration: underline; text-underline-offset: 3px; }
 .spacer { border: 0; background: transparent; padding: 0; margin: 0; }
 .card-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--vp-c-divider); }
 .card-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--vp-c-brand-1); line-height: 1.35; letter-spacing: -0.01em; border-top: 0 !important; padding-top: 0 !important; flex: 1; min-width: 0; }
