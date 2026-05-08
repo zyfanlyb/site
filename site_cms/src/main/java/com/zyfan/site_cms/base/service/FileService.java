@@ -34,6 +34,10 @@ public interface FileService {
      */
     void deleteFile(String objectName);
 
+    /**
+     * 若路径非空则尝试删除；对象不存在或失败时不抛异常（业务清理用）。
+     */
+    void deleteFileIfPresent(String objectName);
 
     void authPreview(String fileName, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

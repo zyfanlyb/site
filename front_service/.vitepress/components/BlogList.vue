@@ -713,11 +713,11 @@ onBeforeUnmount(() => {
   color: var(--vp-c-text-1);
   border-color: color-mix(in srgb, #ffeb3b 70%, var(--vp-c-divider));
 }
-.one-cover { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: start; }
-.one-cover-img { width: 160px; height: 96px; border-radius: 10px; overflow: hidden; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); }
+.one-cover { display: grid; grid-template-columns: 380px 1fr; gap: 16px; align-items: start; }
+.one-cover-img { width: 380px; height: 228px; border-radius: 12px; overflow: hidden; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); }
 .one-cover-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .one-cover-summary { margin: 0; font-size: 13px; color: var(--vp-c-text-2); line-height: 1.6; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; min-height: calc(1.6em * 3); }
-.card-covers { display: flex; gap: 10px; flex-wrap: nowrap; overflow: hidden; }
+.card-covers { display: flex; gap: 16px; flex-wrap: nowrap; overflow: hidden; }
 .card-covers-scroll { overflow-x: auto; scroll-behavior: smooth; padding-bottom: 2px; scrollbar-width: none; }
 .card-covers-scroll::-webkit-scrollbar { display: none; }
 .gallery-wrap { position: relative; }
@@ -725,7 +725,8 @@ onBeforeUnmount(() => {
 .gallery-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .gallery-btn-left { left: -8px; }
 .gallery-btn-right { right: -8px; }
-.cover-thumb { position: relative; width: 132px; height: 78px; border-radius: 10px; overflow: hidden; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); flex: 0 0 auto; }
+/* 与 .one-cover-img 同尺寸，多图横滑时每张与单封面一致 */
+.cover-thumb { position: relative; width: 380px; height: 228px; border-radius: 12px; overflow: hidden; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); flex: 0 0 auto; }
 .cover-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .btn { margin-top: 12px; display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); color: var(--vp-c-text-1); font-weight: 600; cursor: pointer; }
 .load-more { width: 70vw; margin: 14px auto 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -739,8 +740,16 @@ onBeforeUnmount(() => {
   .page-wrap { padding: 16px 0 40px; align-items: stretch; }
   .search-box { max-width: none; flex-wrap: wrap; }
   .search-input { width: 100%; flex: 1 1 100%; }
-  .one-cover { grid-template-columns: 120px 1fr; }
-  .one-cover-img { width: 120px; height: 72px; }
+  .one-cover { grid-template-columns: minmax(200px, 58vw) 1fr; gap: 12px; }
+  .one-cover-img { width: 100%; max-width: min(320px, 100%); aspect-ratio: 5 / 3; height: auto; min-height: 120px; }
+  .cover-thumb {
+    flex: 0 0 auto;
+    width: min(320px, 58vw);
+    max-width: min(320px, 100%);
+    height: auto;
+    aspect-ratio: 5 / 3;
+    min-height: 120px;
+  }
   .card-summary, .one-cover-summary { -webkit-line-clamp: 2; line-clamp: 2; min-height: calc(1.6em * 2); }
 }
 </style>

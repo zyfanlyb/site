@@ -82,7 +82,7 @@
         <a-upload
           v-model:file-list="coverFileList"
           list-type="picture-card"
-          :custom-request="handleCoverUpload"
+          :custom-request="handleCoverCustomRequest"
           :before-upload="beforeCoverUpload"
           @remove="handleCoverRemove"
           :max-count="6"
@@ -163,6 +163,12 @@
 
 <script setup>
 import { nextTick, ref, reactive, watch } from 'vue'
+
+/** 正文插图占位，须与 site_cms CmsArticleServiceImpl.mergeIncomingInlineImages 一致 */
+const INLINE_TOKEN_RE = /__CMS_INLINE_(\d+)__/g
+
+/** 保存含大图 multipart / 长正文时，默认 axios 10s 与后端默认 POST 体积限制易触发超时或连接重置 */
+const ARTICLE_SUBMIT_TIMEOUT_MS = 300000
 import { message } from 'ant-design-vue'
 import { UploadOutlined, FullscreenOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { post } from '@/utils/request'
@@ -193,6 +199,51 @@ const fullscreenBodyStyle = {
 const categoryList = ref([])
 const typeList = ref([])
 
+/** 未保存正文插图：索引 -> 本地 File（保存时 multipart 上传） */
+const pendingInlineByIndex = reactive({})
+const inlineSeq = ref(0)
+const inlineBlobUrlByIndex = new Map()
+
+function clearPendingInlineDrafts() {
+  inlineBlobUrlByIndex.forEach((url) => URL.revokeObjectURL(url))
+  inlineBlobUrlByIndex.clear()
+  Object.keys(pendingInlineByIndex).forEach((k) => delete pendingInlineByIndex[k])
+  inlineSeq.value = 0
+}
+
+function inlineHydrateOptions() {
+  return {
+    resolveInlinePlaceholder(src) {
+      const m = String(src || '').trim().match(/^__CMS_INLINE_(\d+)__$/)
+      if (!m) return null
+      const idx = parseInt(m[1], 10)
+      const f = pendingInlineByIndex[idx]
+      if (!f) return null
+      if (!inlineBlobUrlByIndex.has(idx)) {
+        inlineBlobUrlByIndex.set(idx, URL.createObjectURL(f))
+      }
+      return inlineBlobUrlByIndex.get(idx)
+    }
+  }
+}
+
+/** 按正文从左到右首次出现顺序，收集不重复的插图占位索引 */
+function collectInlineIndicesInDocOrder(content) {
+  const order = []
+  const seen = new Set()
+  const text = content == null ? '' : String(content)
+  let m
+  INLINE_TOKEN_RE.lastIndex = 0
+  while ((m = INLINE_TOKEN_RE.exec(text)) !== null) {
+    const i = parseInt(m[1], 10)
+    if (!seen.has(i)) {
+      seen.add(i)
+      order.push(i)
+    }
+  }
+  return order
+}
+
 const formData = reactive({
   id: null,
   title: '',
@@ -215,7 +266,7 @@ const handleEditorHtmlChanged = () => {
   if (editorHydrateTimer) window.clearTimeout(editorHydrateTimer)
   editorHydrateTimer = window.setTimeout(async () => {
     await nextTick()
-    hydrateCmsPreviewImages(editorWrapRef.value)
+    hydrateCmsPreviewImages(editorWrapRef.value, inlineHydrateOptions())
   }, 50)
 }
 
@@ -224,7 +275,7 @@ const handleFullscreenEditorHtmlChanged = () => {
   if (fullscreenHydrateTimer) window.clearTimeout(fullscreenHydrateTimer)
   fullscreenHydrateTimer = window.setTimeout(async () => {
     await nextTick()
-    hydrateCmsPreviewImages(fullscreenEditorWrapRef.value)
+    hydrateCmsPreviewImages(fullscreenEditorWrapRef.value, inlineHydrateOptions())
   }, 50)
 }
 
@@ -240,6 +291,7 @@ const resetForm = () => {
   formData.status = 0
   typeList.value = []
   coverFileList.value = []
+  clearPendingInlineDrafts()
   formRef.value?.resetFields()
 }
 
@@ -257,95 +309,65 @@ const beforeCoverUpload = (file) => {
   return true
 }
 
-const handleCoverUpload = async (options) => {
-  const { file, onSuccess, onError } = options
-  try {
-    const fd = new FormData()
-    fd.append('file', file)
-    const response = await service.post('/file/upload', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    if (response.code === 200 && response.data) {
-      // 以 coverImages 为准；同时兼容旧字段 cover（取第一张）
-      if (!Array.isArray(formData.coverImages)) formData.coverImages = []
-      formData.coverImages.push(response.data)
-      formData.cover = formData.coverImages[0] || ''
-
-      const idx = coverFileList.value.findIndex((item) => item.uid === file.uid)
-      const previewUrl = await getCmsFilePreviewUrl(response.data)
-      const patch = {
-        uid: file.uid,
-        name: file.name || 'cover',
-        status: 'done',
-        url: previewUrl,
-        filePath: response.data
-      }
-      if (idx > -1) coverFileList.value[idx] = { ...coverFileList.value[idx], ...patch }
-      else coverFileList.value.push(patch)
-
-      onSuccess(response.data, file)
-      message.success('封面上传成功')
-    } else {
-      throw new Error(response.message || '上传失败')
-    }
-  } catch (error) {
-    message.error('封面上传失败: ' + (error.message || '未知错误'))
-    onError(error)
+/**
+ * 封面仅加入列表并本地预览，真正上传到 MinIO 在保存文章时与 /cms/article/insert|update 一并 multipart 提交。
+ */
+const handleCoverCustomRequest = ({ file, onSuccess }) => {
+  const previewUrl = URL.createObjectURL(file)
+  const idx = coverFileList.value.findIndex((item) => item.uid === file.uid)
+  const patch = {
+    uid: file.uid,
+    name: file.name || 'cover',
+    status: 'done',
+    url: previewUrl,
+    originFileObj: file
   }
+  if (idx > -1) {
+    coverFileList.value[idx] = { ...coverFileList.value[idx], ...patch }
+  } else {
+    coverFileList.value.push(patch)
+  }
+  onSuccess({}, file)
 }
 
 /**
  * md-editor-v3 图片上传回调：
- * - 上传到 CMS 的 /file/upload，拿到 objectName
- * - 回填给编辑器：用 objectName 作为图片 src
- *   预览时由 hydrateCmsPreviewImages 把 objectName 替换成带 token 的 blob URL
+ * - 不立即调 /file/upload，避免未保存文章产生 MinIO 垃圾
+ * - 为每张图分配占位 {@code __CMS_INLINE_n__}，本地 File 存入 pendingInlineByIndex；保存文章时与 insert|update 一并 multipart 上传并由服务端替换为 objectKey
+ * - 预览由 hydrateCmsPreviewImages + resolveInlinePlaceholder 用 blob URL 展示
  */
 const handleUploadImg = async (files, callback) => {
   const list = Array.from(files || []).filter(Boolean)
   if (!list.length) return
 
   try {
-    const uploads = await Promise.all(
-      list.map(async (file) => {
-        const isImage = String(file?.type || '').startsWith('image/')
-        if (!isImage) {
-          throw new Error('只能上传图片文件')
-        }
-        const maxSize = 10 * 1024 * 1024 // 10MB
-        if (file.size > maxSize) {
-          throw new Error('图片不能超过 10MB')
-        }
-        const fd = new FormData()
-        fd.append('file', file)
-        const res = await service.post('/file/upload', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        if (res?.code !== 200 || !res?.data) {
-          throw new Error(res?.message || '上传失败')
-        }
-        return String(res.data).trim()
-      })
-    )
-
-    const objectNames = uploads.filter(Boolean)
-    if (!objectNames.length) return
-    // md-editor-v3 会将返回的字符串作为 markdown 图片地址插入
-    callback(objectNames)
-    message.success('图片已插入')
+    const placeholders = []
+    for (const file of list) {
+      const isImage = String(file?.type || '').startsWith('image/')
+      if (!isImage) {
+        throw new Error('只能上传图片文件')
+      }
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        throw new Error('图片不能超过 10MB')
+      }
+      inlineSeq.value += 1
+      const idx = inlineSeq.value
+      pendingInlineByIndex[idx] = file
+      placeholders.push(`__CMS_INLINE_${idx}__`)
+    }
+    if (!placeholders.length) return
+    callback(placeholders)
+    await nextTick()
+    hydrateCmsPreviewImages(editorWrapRef.value, inlineHydrateOptions())
+    hydrateCmsPreviewImages(fullscreenEditorWrapRef.value, inlineHydrateOptions())
   } catch (e) {
     console.error(e)
-    message.error(`图片上传失败：${e?.message || '未知错误'}`)
+    message.error(`图片处理失败：${e?.message || '未知错误'}`)
   }
 }
 
-const handleCoverRemove = (file) => {
-  const filePath = file?.filePath
-  if (filePath && Array.isArray(formData.coverImages)) {
-    formData.coverImages = formData.coverImages.filter((x) => x !== filePath)
-  }
-  formData.cover = Array.isArray(formData.coverImages) ? (formData.coverImages[0] || '') : ''
-  return true
-}
+const handleCoverRemove = () => true
 
 const fetchCategoryList = async () => {
   try {
@@ -441,24 +463,62 @@ const fetchArticleInfo = async (id) => {
   }
 }
 
+const buildCoverSubmitPayload = () => {
+  const slotTemplate = []
+  const newFiles = []
+  for (const item of coverFileList.value) {
+    if (item.filePath) {
+      slotTemplate.push(String(item.filePath).trim())
+    } else if (item.originFileObj) {
+      slotTemplate.push('')
+      newFiles.push(item.originFileObj)
+    }
+  }
+  if (!Array.isArray(formData.typeIds)) formData.typeIds = []
+  const firstKey = slotTemplate.find((s) => s && String(s).trim()) || ''
+  const payload = {
+    ...formData,
+    coverImages: slotTemplate,
+    cover: firstKey
+  }
+  return { payload, newFiles }
+}
+
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
+
+    const { payload, newFiles } = buildCoverSubmitPayload()
+    const inlineIndices = collectInlineIndicesInDocOrder(payload.content)
+    const inlineFiles = inlineIndices.map((i) => pendingInlineByIndex[i]).filter(Boolean)
+    if (inlineIndices.length > 0 && inlineIndices.length !== inlineFiles.length) {
+      message.error('正文插图缺少本地文件，请删除无效占位或重新插入图片')
+      return
+    }
+
     loading.value = true
 
-    // 提交前保证 coverImages / cover 一致
-    if (!Array.isArray(formData.coverImages)) formData.coverImages = []
-    formData.coverImages = formData.coverImages.map((x) => (x == null ? '' : String(x)).trim()).filter(Boolean)
-    formData.cover = formData.coverImages[0] || ''
-    // 类型：保证为数组
-    if (!Array.isArray(formData.typeIds)) formData.typeIds = []
-    
-    if (formData.id) {
-      await post('/cms/article/update', { data: formData })
+    const url = formData.id ? '/cms/article/update' : '/cms/article/insert'
+    const body = { data: payload }
+
+    const needsMultipart = newFiles.length > 0 || inlineFiles.length > 0
+    if (!needsMultipart) {
+      await service.post(url, body, { timeout: ARTICLE_SUBMIT_TIMEOUT_MS })
     } else {
-      await post('/cms/article/insert', { data: formData })
+      const fd = new FormData()
+      fd.append('data', JSON.stringify(body))
+      for (const f of newFiles) {
+        fd.append('coverFiles', f)
+      }
+      if (inlineFiles.length > 0) {
+        fd.append('inlineIndices', JSON.stringify(inlineIndices))
+        for (const f of inlineFiles) {
+          fd.append('inlineFiles', f)
+        }
+      }
+      await service.post(url, fd, { timeout: ARTICLE_SUBMIT_TIMEOUT_MS })
     }
-    
+
     message.success(formData.id ? '更新成功' : '新增成功')
     visible.value = false
     emit('refresh')

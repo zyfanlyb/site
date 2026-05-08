@@ -39,27 +39,58 @@ function resolveObjectNameFromImgSrc(raw) {
   return s
 }
 
+/** 正文未保存前的本地插图占位（与 site_cms 合并逻辑一致） */
+const INLINE_PLACEHOLDER = /^__CMS_INLINE_(\d+)__$/
+
+function normalizeImgSrcForMatch(raw) {
+  const s = String(raw || '').trim()
+  if (!s) return ''
+  try {
+    return decodeURIComponent(s)
+  } catch {
+    return s
+  }
+}
+
 /**
  * 将 rootEl 内的 <img> 的 src（objectName）替换为 /file/preview 对应的 blob URL。
  * 适用于“需要 token 鉴权的图片预览”，避免 <img> 无法携带 Authorization Header 的问题。
+ *
+ * @param {HTMLElement} rootEl
+ * @param {{ resolveInlinePlaceholder?: (src: string) => string | null | Promise<string | null> }} [options]
+ *   未保存正文的插图占位 {@code __CMS_INLINE_n__}，由调用方提供本地 File 对应的 blob URL
  */
-export async function hydrateCmsPreviewImages(rootEl) {
+export async function hydrateCmsPreviewImages(rootEl, options = {}) {
   if (!rootEl?.querySelectorAll) return
 
   const imgs = Array.from(rootEl.querySelectorAll('img'))
   if (!imgs.length) return
 
+  const resolveInline = options?.resolveInlinePlaceholder
+
   await Promise.all(
     imgs.map(async (img) => {
       try {
-        const src = img.getAttribute('src') || ''
-        if (!src) return
-        if (isBlobOrDataUrl(src)) return
+        const srcRaw = img.getAttribute('src') || ''
+        if (!srcRaw) return
+        if (isBlobOrDataUrl(srcRaw)) return
         if (img.dataset?.cmsPreviewHydrated === '1') return
-        // 外链图（非本站 objectName、非预览接口）不处理
-        if (isExternalImageUrl(src)) return
 
-        const objectName = resolveObjectNameFromImgSrc(src)
+        const normalized = normalizeImgSrcForMatch(srcRaw)
+        if (resolveInline && INLINE_PLACEHOLDER.test(normalized)) {
+          const maybe = resolveInline(normalized)
+          const blobUrl = maybe && typeof maybe.then === 'function' ? await maybe : maybe
+          if (blobUrl) {
+            img.dataset.cmsPreviewHydrated = '1'
+            img.setAttribute('src', blobUrl)
+          }
+          return
+        }
+
+        // 外链图（非本站 objectName、非预览接口）不处理
+        if (isExternalImageUrl(srcRaw)) return
+
+        const objectName = resolveObjectNameFromImgSrc(srcRaw)
         if (!objectName) return
 
         img.dataset.cmsPreviewHydrated = '1'

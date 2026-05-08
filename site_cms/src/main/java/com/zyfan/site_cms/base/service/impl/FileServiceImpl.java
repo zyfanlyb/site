@@ -9,6 +9,8 @@ import io.minio.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -27,6 +29,14 @@ import java.util.UUID;
 
 @Service
 public class FileServiceImpl implements FileService {
+
+    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
+
+    /** MinIO object key：兼容历史路径首段 {@code upload/}，新写入均为 {@code yyyy/MM/dd/uuid.ext} */
+    private static String toMinioObjectKey(String raw) {
+        return StringUtils.removeStart(StringUtils.trimToEmpty(raw), "upload/");
+    }
+
     @Autowired
     private AuthClient authClient;
     @Autowired
@@ -86,6 +96,7 @@ public class FileServiceImpl implements FileService {
         if (StringUtils.isBlank(objectName)) {
             throw new ZException(CodeStatusEnum.FAILED, "文件路径不能为空");
         }
+        objectName = toMinioObjectKey(objectName);
 
         try {
             // 获取文件对象
@@ -132,6 +143,7 @@ public class FileServiceImpl implements FileService {
         if (StringUtils.isBlank(objectName)) {
             throw new ZException(CodeStatusEnum.FAILED, "文件路径不能为空");
         }
+        objectName = toMinioObjectKey(objectName);
 
         try {
             // 获取文件对象
@@ -175,6 +187,7 @@ public class FileServiceImpl implements FileService {
         if (StringUtils.isBlank(objectName)) {
             throw new ZException(CodeStatusEnum.FAILED, "文件路径不能为空");
         }
+        objectName = toMinioObjectKey(objectName);
 
         try {
             minioClient.removeObject(
@@ -185,6 +198,24 @@ public class FileServiceImpl implements FileService {
             );
         } catch (Exception e) {
             throw new ZException(CodeStatusEnum.FAILED, "文件删除失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteFileIfPresent(String objectName) {
+        if (StringUtils.isBlank(objectName)) {
+            return;
+        }
+        objectName = toMinioObjectKey(objectName);
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName.trim())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("MinIO deleteFileIfPresent skipped: objectName={}, err={}", objectName, e.getMessage());
         }
     }
 
@@ -203,6 +234,7 @@ public class FileServiceImpl implements FileService {
         if (StringUtils.isBlank(fileName)) {
             return;
         }
+        fileName = toMinioObjectKey(fileName);
         ResponseEntity<Resource> responseEntity = null;
         try {
             responseEntity = authClient.filePreview(fileName,request.getHeader("Authorization"),flushAccessTokenTask.getAccessToken());

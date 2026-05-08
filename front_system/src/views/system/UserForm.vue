@@ -240,46 +240,26 @@ const beforeUpload = (file) => {
   return true // 校验通过，允许文件添加到列表，customRequest会处理实际上传
 }
 
-// 自定义上传
-const handleUpload = async (options) => {
-  const { file, onSuccess, onError } = options
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    const response = await service.post('/file/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    
-    if (response.code === 200) {
-      // 上传成功，保存文件路径
-      const filePath = response.data
-      formState.avatar = filePath
-      
-      // 更新文件列表，使用预览URL（异步获取blob URL）
-      const fileIndex = fileList.value.findIndex(item => item.uid === file.uid)
-      if (fileIndex > -1) {
-        const previewUrl = await getAuthFilePreviewUrl(filePath)
-        fileList.value[fileIndex] = {
-          ...fileList.value[fileIndex],
-          status: 'done',
-          url: previewUrl,
-          filePath: filePath
-        }
-      }
-      
-      onSuccess(response.data, file)
-      message.success('上传成功')
-    } else {
-      throw new Error(response.message || '上传失败')
-    }
-  } catch (error) {
-    console.error('上传失败:', error)
-    message.error('上传失败: ' + (error.message || '未知错误'))
-    onError(error)
+/**
+ * 头像仅本地预览；与 /sysUser/insert|update 一并 multipart 提交，避免未点确定就落 MinIO。
+ */
+const handleUpload = ({ file, onSuccess }) => {
+  const previewUrl = URL.createObjectURL(file)
+  const idx = fileList.value.findIndex((item) => item.uid === file.uid)
+  const patch = {
+    uid: file.uid,
+    name: file.name || 'avatar',
+    status: 'done',
+    url: previewUrl,
+    originFileObj: file
   }
+  if (idx > -1) {
+    fileList.value[idx] = { ...fileList.value[idx], ...patch }
+  } else {
+    fileList.value.push(patch)
+  }
+  formState.avatar = ''
+  onSuccess({}, file)
 }
 
 // 文件列表变化
@@ -335,25 +315,35 @@ const handleOk = async () => {
   try {
     await formRef.value.validate()
     confirmLoading.value = true
-    
+
+    const avatarItem = fileList.value[0]
+    const newAvatarFile = avatarItem?.originFileObj
+
     const formData = { ...formState }
-    // 编辑模式下，如果密码为空则不传
     if (isEdit.value && !formData.password) {
       delete formData.password
     }
-    
-    // 使用文件路径，如果没有新上传的文件，保持原有路径
-    if (fileList.value.length > 0) {
-      const file = fileList.value[0]
-      // 优先使用filePath（新上传的文件），否则使用formState.avatar（原有文件）
-      formData.avatar = file.filePath || formState.avatar
+
+    if (newAvatarFile) {
+      formData.avatar = ''
+    } else if (avatarItem?.filePath) {
+      formData.avatar = avatarItem.filePath
     } else {
       formData.avatar = ''
     }
 
-    // 根据模式调用不同接口
     const url = isEdit.value ? '/sysUser/update' : '/sysUser/insert'
-    await post(url, { data: formData })
+    const body = { data: formData }
+
+    if (newAvatarFile) {
+      const fd = new FormData()
+      fd.append('data', JSON.stringify(body))
+      fd.append('avatarFile', newAvatarFile)
+      await service.post(url, fd)
+    } else {
+      await post(url, body)
+    }
+
     message.success('操作成功')
     showModal.value = false
     emits('refresh')
