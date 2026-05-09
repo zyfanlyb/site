@@ -358,8 +358,8 @@ const canRight = reactive({})
 
 const toPreviewHref = (article) => {
   const id = article?.id
-  if (id == null || id === '') return '/dynamic/blog'
-  return `/dynamic/blog?id=${encodeURIComponent(String(id))}`
+  if (id == null || id === '') return '/dynamic/blog.html'
+  return `/dynamic/blog.html?id=${encodeURIComponent(String(id))}`
 }
 
 /** 仿哔哩哔哩专栏：列表点击新开标签页打开正文，原列表页保留 */

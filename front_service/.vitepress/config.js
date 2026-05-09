@@ -44,8 +44,8 @@ export default defineConfig(({ mode }) => {
 
       nav: [
         { text: '首页', link: '/' },
-        { text: '博客', link: '/dynamic/blogs' },
-        { text: '项目经历', link: '/dynamic/projects' },
+        { text: '博客', link: '/dynamic/blogs.html' },
+        { text: '项目经历', link: '/dynamic/projects.html' },
       ],
 
       sidebar: {
